@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トレードジャーナル</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090c;--s1:#0d1117;--s2:#111820;--border:#1c2535;--win:#00d97e;--win-dim:rgba(0,217,126,0.1);--loss:#ff3d5a;--loss-dim:rgba(255,61,90,0.1);--neutral:#3d9ee8;--text:#dde4ed;--dim:#3d5068;--dim2:#1e2d3d;--gold:#f0b400;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 50%,rgba(61,158,232,0.05) 0%,transparent 50%),radial-gradient(circle at 85% 20%,rgba(0,217,126,0.04) 0%,transparent 40%),repeating-linear-gradient(0deg,transparent,transparent 56px,rgba(255,255,255,0.016) 56px,rgba(255,255,255,0.016) 57px),repeating-linear-gradient(90deg,transparent,transparent 56px,rgba(255,255,255,0.016) 56px,rgba(255,255,255,0.016) 57px);pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--text);}
+.nav-tabs{display:flex;gap:2px;}
+.tab-btn{background:none;border:none;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);padding:7px 14px;border-bottom:2px solid transparent;transition:all 0.2s;}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--neutral);}
+.tab-btn:hover{color:var(--text);}
+
+.main{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:32px 20px;}
+.view{display:none;}.view.active{display:block;}
+.ph{margin-bottom:28px;}.ph h2{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;margin-bottom:4px;}.ph p{font-size:12px;color:var(--dim);letter-spacing:1px;}
+
+/* RESULT TOGGLE */
+.rtog{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);margin-bottom:20px;}
+.rtb{background:none;border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;padding:14px;transition:all 0.2s;color:var(--dim);}
+.rtb.win.active{background:var(--win-dim);color:var(--win);border-bottom:2px solid var(--win);}
+.rtb.loss.active{background:var(--loss-dim);color:var(--loss);border-bottom:2px solid var(--loss);}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.ff{grid-column:1/-1;}
+.field label{display:block;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;padding:10px 12px;outline:none;transition:border-color 0.2s;appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--neutral);}
+.field textarea{resize:vertical;min-height:64px;font-family:'Noto Sans JP',sans-serif;font-size:12px;line-height:1.6;}
+.field select option{background:#0d1117;}
+
+/* CONDITIONS */
+.cs{margin-bottom:12px;}.ct{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+.ci{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);padding:8px 10px;cursor:pointer;transition:all 0.15s;font-size:12px;color:var(--dim);}
+.ci:hover{color:var(--text);border-color:var(--dim);}
+.cd{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background 0.15s;}
+.ci.checked.wc{border-color:var(--win);color:var(--win);background:var(--win-dim);}.ci.checked.wc .cd{background:var(--win);}
+.ci.checked.lc{border-color:var(--loss);color:var(--loss);background:var(--loss-dim);}.ci.checked.lc .cd{background:var(--loss);}
+
+/* IMAGE UPLOAD */
+.img-upload-wrap{margin-bottom:12px;}
+.img-upload-area{
+  background:var(--s1);border:1px dashed var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;cursor:pointer;transition:all 0.2s;position:relative;min-height:90px;
+}
+.img-upload-area:hover{border-color:var(--neutral);}
+.img-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.iu-icon{font-size:22px;margin-bottom:6px;opacity:0.35;}
+.iu-text{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);}
+.img-preview-wrap{margin-top:8px;position:relative;display:none;}
+.img-preview{width:100%;max-height:220px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
+.img-remove{
+  position:absolute;top:8px;right:8px;
+  background:rgba(7,9,12,0.85);border:1px solid var(--loss);
+  color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:4px 10px;cursor:pointer;
+}
+.img-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+
+/* SUBMIT */
+.sbtn{width:100%;border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;padding:14px;margin-top:12px;transition:opacity 0.2s;}
+.sbtn.wb{background:var(--win);color:#000;}.sbtn.lb{background:var(--loss);color:#fff;}.sbtn:hover{opacity:0.85;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:12px 20px;transform:translateY(80px);opacity:0;transition:all 0.3s;}
+.toast.wt{background:var(--win);color:#000;}.toast.lt{background:var(--loss);color:#fff;}.toast.show{transform:translateY(0);opacity:1;}
+
+/* LIGHTBOX */
+.lightbox{
+  position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,0.92);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:90vh;object-fit:contain;border:1px solid var(--border);}
+.lb-close{
+  position:fixed;top:20px;right:20px;
+  background:none;border:1px solid var(--dim);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;
+  padding:8px 16px;cursor:pointer;z-index:1000;
+}
+.lb-close:hover{border-color:var(--loss);color:var(--loss);}
+.lb-info{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);
+}
+
+/* ANALYSIS */
+.wrb{background:var(--s1);border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:20px;}
+.wrc{padding:18px 20px;border-right:1px solid var(--border);}.wrc:last-child{border-right:none;}
+.wrl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:6px;}
+.wrv{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;line-height:1;}
+.wrs{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px;}
+.wrbw{margin-bottom:20px;}
+.wrt{height:8px;background:var(--loss-dim);border:1px solid var(--border);}
+.wrf{height:100%;background:var(--win);transition:width 0.6s ease;}
+.wrbl{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-top:5px;}
+.kr{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
+.kpi{background:var(--s1);border:1px solid var(--border);padding:14px 16px;}
+.kpi .kl{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;}
+.kpi .kv{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;}
+.kv.pos{color:var(--win);}.kv.neg{color:var(--loss);}.kv.neu{color:var(--neutral);}
+.ib{background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--gold);padding:16px 20px;margin-bottom:20px;}
+.il{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;}
+.ii{display:flex;flex-direction:column;gap:6px;}
+.iitem{font-size:12px;color:var(--text);display:flex;gap:8px;align-items:flex-start;}
+.iitem::before{content:'›';color:var(--gold);font-size:14px;flex-shrink:0;line-height:1.3;}
+.tc2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.ac{background:var(--s1);border:1px solid var(--border);padding:16px 18px;}
+.act{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:12px;text-transform:uppercase;}
+.cbr{margin-bottom:8px;}
+.cbrt{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.cbrl{color:var(--text);}.cbrs{font-family:'Share Tech Mono',monospace;color:var(--dim);}
+.cbrk{height:4px;background:var(--dim2);}
+.cbrf{height:100%;transition:width 0.5s ease;}
+.cbrf.wf{background:var(--win);}.cbrf.lf{background:var(--loss);}
+
+/* LIST */
+.lc2{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.fg2{display:flex;gap:5px;}
+.fb{background:var(--s1);border:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--dim);padding:6px 12px;cursor:pointer;transition:all 0.15s;}
+.fb.active{border-color:var(--neutral);color:var(--neutral);}
+.fb.wf.active{border-color:var(--win);color:var(--win);}
+.fb.lf.active{border-color:var(--loss);color:var(--loss);}
+.clr{background:none;border:1px solid var(--dim2);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:6px 12px;cursor:pointer;transition:all 0.2s;}
+.clr:hover{border-color:var(--loss);color:var(--loss);}
+
+.tl{display:flex;flex-direction:column;gap:6px;}
+.tc{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--tcc,var(--border));overflow:hidden;}
+
+/* Trade card header */
+.tcm{display:grid;grid-template-columns:110px 65px 75px 1fr 28px 28px;gap:8px;align-items:center;padding:12px 16px;cursor:pointer;}
+.tcd{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);line-height:1.5;}
+.tcr{font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;}
+.tcr.win{color:var(--win);}.tcr.loss{color:var(--loss);}
+.tcu{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);}
+.tcmm{font-size:11px;color:#6a7f94;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tc-img-thumb{
+  width:26px;height:26px;object-fit:cover;
+  border:1px solid var(--border);cursor:pointer;
+  border-radius:1px;flex-shrink:0;
+}
+.tc-img-none{width:26px;height:26px;flex-shrink:0;}
+.tcdl{background:none;border:none;color:var(--dim2);font-size:13px;cursor:pointer;padding:2px;transition:color 0.2s;}
+.tcdl:hover{color:var(--loss);}
+
+/* Detail expand */
+.tdet{display:none;border-top:1px solid var(--border);background:var(--bg);}
+.tdet.open{display:block;}
+
+/* Chart section in detail */
+.tdet-inner{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px;}
+.tdet-left{}
+.tdet-right{}
+.tdl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;}
+.tdt{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.tdtag{font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid;}
+.tdtag.wt{border-color:rgba(0,217,126,0.3);color:var(--win);}
+.tdtag.lt{border-color:rgba(255,61,90,0.3);color:var(--loss);}
+.tdmt{font-size:11px;color:#6a7f94;line-height:1.6;}
+
+/* Chart image in detail */
+.det-chart{
+  width:100%;border:1px solid var(--border);
+  cursor:pointer;transition:opacity 0.15s;
+  display:block;
+}
+.det-chart:hover{opacity:0.85;}
+.det-no-img{
+  width:100%;height:120px;
+  background:var(--s2);border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim2);
+}
+
+.empty{text-align:center;padding:60px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;}
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.94);display:none;align-items:center;justify-content:center;padding:20px;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:88vh;object-fit:contain;}
+.lb-close{position:fixed;top:16px;right:16px;background:rgba(7,9,12,0.8);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:8px 16px;cursor:pointer;z-index:1000;letter-spacing:1px;}
+.lb-close:hover{border-color:var(--loss);color:var(--loss);}
+
+@media(max-width:640px){
+  .fg{grid-template-columns:1fr;}
+  .kr{grid-template-columns:repeat(2,1fr);}
+  .wrb{grid-template-columns:1fr;}
+  .wrc{border-right:none;border-bottom:1px solid var(--border);}
+  .wrc:last-child{border-bottom:none;}
+  .tc2{grid-template-columns:1fr;}
+  .tcm{grid-template-columns:1fr 1fr 28px 28px;grid-template-rows:auto auto;}
+  .tcmm{grid-column:1/-1;}
+  .tdet-inner{grid-template-columns:1fr;}
+  .cg{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">TRADE JOURNAL</div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="V('record')">記録</button>
+    <button class="tab-btn" onclick="V('analysis')">分析</button>
+    <button class="tab-btn" onclick="V('list')">一覧</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- RECORD -->
+  <div id="view-record" class="view active">
+    <div class="ph"><h2>トレード記録</h2><p>勝ち・負け両方を記録する</p></div>
+    <div class="rtog">
+      <button class="rtb win active" id="bw" onclick="SR('win')">▲ WIN</button>
+      <button class="rtb loss" id="bl" onclick="SR('loss')">▼ LOSS</button>
+    </div>
+    <div class="fg">
+      <div class="field"><label>日時</label><input type="datetime-local" id="fd"></div>
+      <div class="field"><label>銘柄</label>
+        <select id="fs"><option>NASDAQ / MNQ</option><option>USDJPY</option><option>XAUUSD</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>pips</label><input type="number" id="fp" placeholder="例: 23"></div>
+      <div class="field"><label>$ (USD)</label><input type="number" id="fu" placeholder="例: 340"></div>
+      <div class="field"><label>方向</label><select id="fdr"><option>Buy（ロング）</option><option>Sell（ショート）</option></select></div>
+      <div class="field"><label>バイアス</label><select id="fb2"><option>一致</option><option>不一致</option><option>Range</option></select></div>
+    </div>
+
+    <div class="cs" id="wcs"><div class="ct">勝ちパターン条件（満たしたものを選択）</div><div class="cg" id="wcg"></div></div>
+    <div class="cs" id="lcs" style="display:none"><div class="ct">負けパターン原因（該当するものを選択）</div><div class="cg" id="lcg"></div></div>
+
+    <div class="field ff" style="margin-top:4px;margin-bottom:12px;">
+      <label>メモ・気づき</label>
+      <textarea id="fm" placeholder="違和感、感情、気づいたこと..."></textarea>
+    </div>
+
+    <!-- Image upload -->
+    <div class="img-upload-wrap">
+      <div class="img-label">チャート画像（任意）</div>
+      <div class="img-upload-area" id="upload-area">
+        <input type="file" accept="image/*" id="fimg" onchange="prevImg()">
+        <div class="iu-icon" id="uicon">📊</div>
+        <div class="iu-text" id="utxt">タップして追加</div>
+      </div>
+      <div class="img-preview-wrap" id="prev-wrap">
+        <img class="img-preview" id="img-prev" onclick="LB(this.src,'記録中のチャート')">
+        <button class="img-remove" onclick="rmImg()">✕ 削除</button>
+      </div>
+    </div>
+
+    <button class="sbtn wb" id="sbtn" onclick="save()">WIN を記録する</button>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div id="view-analysis" class="view">
+    <div class="ph"><h2>分析</h2><p id="asub">記録なし</p></div>
+    <div class="wrb">
+      <div class="wrc">
+        <div class="wrl">WIN RATE</div>
+        <div class="wrv" id="awr" style="color:var(--gold)">—</div>
+        <div class="wrs" id="awl">0勝 0敗</div>
+      </div>
+      <div class="wrc">
+        <div class="wrl">純損益</div>
+        <div class="wrv" id="anet" style="color:var(--text);font-size:32px">—</div>
+        <div class="wrs" id="anets">—</div>
+      </div>
+      <div class="wrc">
+        <div class="wrl">平均利益 / 平均損失</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-top:4px;">
+          <div><div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);margin-bottom:2px;">AVG WIN</div><div class="wrv" id="aavgw" style="color:var(--win);font-size:28px">—</div></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--dim);padding-bottom:4px;">/</div>
+          <div><div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--loss);margin-bottom:2px;">AVG LOSS</div><div class="wrv" id="aavgl" style="color:var(--loss);font-size:28px">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="wrbw">
+      <div class="wrt"><div class="wrf" id="wrbar" style="width:0%"></div></div>
+      <div class="wrbl"><span id="wbrl">WIN 0%</span><span id="wbrr">LOSS 0%</span></div>
+    </div>
+    <div class="kr">
+      <div class="kpi"><div class="kl">総利益 $</div><div class="kv pos" id="apro">—</div></div>
+      <div class="kpi"><div class="kl">総損失 $</div><div class="kv neg" id="alos">—</div></div>
+      <div class="kpi"><div class="kl">総利益 pips</div><div class="kv pos" id="awp">—</div></div>
+      <div class="kpi"><div class="kl">総損失 pips</div><div class="kv neg" id="alp">—</div></div>
+      <div class="kpi"><div class="kl">記録数</div><div class="kv neu" id="acnt">—</div></div>
+    </div>
+    <div class="ib" id="ibox" style="display:none">
+      <div class="il">INSIGHT — あなたの傾向</div>
+      <div class="ii" id="iitems"></div>
+    </div>
+    <div class="tc2">
+      <div class="ac"><div class="act">勝ちやすい条件（達成率）</div><div id="wbars"></div></div>
+      <div class="ac"><div class="act">負けやすい条件（頻度）</div><div id="lbars"></div></div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div id="view-list" class="view">
+    <div class="lc2">
+      <div class="fg2">
+        <button class="fb active" onclick="SF('all',this)">ALL</button>
+        <button class="fb wf" onclick="SF('win',this)">WIN</button>
+        <button class="fb lf" onclick="SF('loss',this)">LOSS</button>
+      </div>
+      <button class="clr" onclick="CA()">全削除</button>
+    </div>
+    <div class="tl" id="tlist"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="CLB()">
+  <button class="lb-close" onclick="CLB()">✕ 閉じる</button>
+  <img id="lb-img" src="" onclick="event.stopPropagation()">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='tj_v3';
+const WC=['Sweep（流動性狩り）あり','BOS確定','EMA実体抜け','流動性後の反応が強い','バイアス一致','ニュースなし','ボリュームあり','強いゾーンなし','20pips以上の余地','リテスト後エントリー'];
+const LC=['バイアス不一致','ニュース中/前後','ボリューム弱い','強いゾーンが近い','利幅20pips未満','流動性後に否定','レンジ内','EMAヒゲ抜けのみ','BOS前エントリー','違和感→強行'];
+let CR='win',CF='all',imgData=null;
+
+(function(){
+  const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());
+  document.getElementById('fd').value=n.toISOString().slice(0,16);
+  BG('wcg',WC,'wc');BG('lcg',LC,'lc');
+})();
+
+function BG(id,items,cls){
+  document.getElementById(id).innerHTML=items.map(c=>`<div class="ci ${cls}" onclick="this.classList.toggle('checked')" data-val="${c}"><div class="cd"></div>${c}</div>`).join('');
+}
+
+function SR(r){
+  CR=r;
+  document.getElementById('bw').classList.toggle('active',r==='win');
+  document.getElementById('bl').classList.toggle('active',r==='loss');
+  document.getElementById('wcs').style.display=r==='win'?'block':'none';
+  document.getElementById('lcs').style.display=r==='loss'?'block':'none';
+  const b=document.getElementById('sbtn');
+  b.textContent=r==='win'?'WIN を記録する':'LOSS を記録する';
+  b.className='sbtn '+(r==='win'?'wb':'lb');
+}
+
+// Image
+function prevImg(){
+  const file=document.getElementById('fimg').files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    imgData=e.target.result;
+    document.getElementById('img-prev').src=imgData;
+    document.getElementById('prev-wrap').style.display='block';
+    document.getElementById('uicon').style.display='none';
+    document.getElementById('utxt').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function rmImg(){
+  imgData=null;
+  document.getElementById('img-prev').src='';
+  document.getElementById('prev-wrap').style.display='none';
+  document.getElementById('uicon').style.display='';
+  document.getElementById('utxt').style.display='';
+  document.getElementById('fimg').value='';
+}
+
+// Lightbox
+function LB(src,label){
+  if(!src)return;
+  document.getElementById('lb-img').src=src;
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function CLB(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')CLB();});
+
+// Storage
+function LD(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch{return[];}}
+function SD(d){localStorage.setItem(KEY,JSON.stringify(d));}
+
+function save(){
+  const p=parseFloat(document.getElementById('fp').value);
+  const u=parseFloat(document.getElementById('fu').value);
+  if(!p||!u){alert('pipsと$を入力してください');return;}
+  const s=CR==='win'?'.wc.checked':'.lc.checked';
+  const c=[...document.querySelectorAll(s)].map(e=>e.dataset.val);
+  const rec={
+    id:Date.now(),
+    date:document.getElementById('fd').value,
+    symbol:document.getElementById('fs').value,
+    result:CR,pips:p,usd:u,
+    dir:document.getElementById('fdr').value,
+    bias:document.getElementById('fb2').value,
+    conditions:c,
+    memo:document.getElementById('fm').value.trim(),
+    img:imgData
+  };
+  const d=LD();d.unshift(rec);SD(d);
+  // reset
+  document.getElementById('fp').value='';
+  document.getElementById('fu').value='';
+  document.getElementById('fm').value='';
+  document.querySelectorAll('.ci').forEach(e=>e.classList.remove('checked'));
+  rmImg();
+  T(CR);
+}
+
+function T(type){
+  const t=document.getElementById('toast');
+  t.textContent=type==='win'?'▲ WIN 記録しました':'▼ LOSS 記録しました';
+  t.className='toast '+(type==='win'?'wt':'lt');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function V(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.tab-btn')[['record','analysis','list'].indexOf(v)].classList.add('active');
+  if(v==='analysis')RA();
+  if(v==='list')RL();
+}
+
+// ANALYSIS
+function RA(){
+  const data=LD();
+  if(!data.length){
+    document.getElementById('asub').textContent='記録なし';
+    document.getElementById('ibox').style.display='none';
+    ['awr','anet','aavgw','aavgl','apro','alos','awp','alp','acnt'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('awl').textContent='0勝 0敗';
+    document.getElementById('wrbar').style.width='0%';
+    document.getElementById('wbars').innerHTML='';
+    document.getElementById('lbars').innerHTML='';
+    return;
+  }
+  const W=data.filter(r=>r.result==='win');
+  const L=data.filter(r=>r.result==='loss');
+  const wr=Math.round(W.length/data.length*100);
+  const tp=W.reduce((s,r)=>s+r.usd,0);
+  const tl=L.reduce((s,r)=>s+r.usd,0);
+  const net=tp-tl;
+  const avgW=W.length?Math.round(tp/W.length):0;
+  const avgL=L.length?Math.round(tl/L.length):0;
+  const wp=W.reduce((s,r)=>s+r.pips,0);
+  const lp=L.reduce((s,r)=>s+r.pips,0);
+
+  document.getElementById('asub').textContent=`${data.length}件 / ${W.length}勝 ${L.length}敗`;
+  document.getElementById('awl').textContent=`${W.length}勝 ${L.length}敗`;
+  const we=document.getElementById('awr');
+  we.textContent=wr+'%';
+  we.style.color=wr>=50?'var(--win)':wr>=40?'var(--gold)':'var(--loss)';
+  const ne=document.getElementById('anet');
+  ne.textContent=(net>=0?'+':'-')+'\$'+Math.abs(net).toLocaleString();
+  ne.style.color=net>=0?'var(--win)':'var(--loss)';
+  document.getElementById('anets').textContent=net>=0?'利益超過':'損失超過';
+  document.getElementById('aavgw').textContent='\$'+avgW;
+  document.getElementById('aavgl').textContent='\$'+avgL;
+  document.getElementById('apro').textContent='+\$'+tp.toLocaleString();
+  document.getElementById('alos').textContent='-\$'+tl.toLocaleString();
+  document.getElementById('awp').textContent='+'+wp+'p';
+  document.getElementById('alp').textContent='-'+lp+'p';
+  document.getElementById('acnt').textContent=data.length+'件';
+  document.getElementById('wrbar').style.width=wr+'%';
+  document.getElementById('wbrl').textContent='WIN '+wr+'%';
+  document.getElementById('wbrr').textContent='LOSS '+(100-wr)+'%';
+
+  const ins=[];
+  if(W.length>0){
+    const wc={};WC.forEach(c=>{wc[c]=W.filter(r=>r.conditions&&r.conditions.includes(c)).length;});
+    const top=Object.entries(wc).sort((a,b)=>b[1]-a[1])[0];
+    if(top[1]>0)ins.push(`「${top[0]}」が揃った時に最も勝ちやすい（${top[1]}/${W.length}勝）`);
+  }
+  if(L.length>0){
+    const lc={};LC.forEach(c=>{lc[c]=L.filter(r=>r.conditions&&r.conditions.includes(c)).length;});
+    const top=Object.entries(lc).sort((a,b)=>b[1]-a[1])[0];
+    if(top[1]>0)ins.push(`最も多い負け原因は「${top[0]}」（${top[1]}/${L.length}敗）`);
+    const bl=data.filter(r=>r.result==='loss'&&r.bias==='不一致').length;
+    if(bl>0){const pct=Math.round(bl/L.length*100);if(pct>=30)ins.push(`負けの${pct}%がバイアス不一致 — ここを塞ぐだけで大幅改善`);}
+  }
+  if(avgW>0&&avgL>0){const rr=(avgW/avgL).toFixed(2);ins.push(`平均RR = ${rr}R（${parseFloat(rr)>=1.5?'良好':'改善余地あり'}）`);}
+  if(wr>0)ins.push(wr>=50?`勝率${wr}% — セットアップ精度は機能している`:`勝率${wr}% — セットアップ選別の強化が最優先`);
+
+  const box=document.getElementById('ibox');
+  if(ins.length){box.style.display='block';document.getElementById('iitems').innerHTML=ins.map(i=>`<div class="iitem">${i}</div>`).join('');}
+
+  const wb=document.getElementById('wbars'),lb2=document.getElementById('lbars');
+  wb.innerHTML='';lb2.innerHTML='';
+  WC.forEach(c=>{
+    const cnt=W.filter(r=>r.conditions&&r.conditions.includes(c)).length;
+    const pct=W.length?Math.round(cnt/W.length*100):0;
+    wb.innerHTML+=BR(c,cnt,pct,'wf',W.length);
+  });
+  LC.forEach(c=>{
+    const cnt=L.filter(r=>r.conditions&&r.conditions.includes(c)).length;
+    const pct=L.length?Math.round(cnt/L.length*100):0;
+    lb2.innerHTML+=BR(c,cnt,pct,'lf',L.length);
+  });
+}
+
+function BR(label,cnt,pct,cls,total){
+  return `<div class="cbr"><div class="cbrt"><span class="cbrl">${label}</span><span class="cbrs">${cnt}/${total} (${pct}%)</span></div><div class="cbrk"><div class="cbrf ${cls}" style="width:${pct}%"></div></div></div>`;
+}
+
+// LIST
+function SF(f,btn){
+  CF=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  RL();
+}
+
+function RL(){
+  const data=LD().filter(r=>CF==='all'||r.result===CF);
+  const list=document.getElementById('tlist');
+  if(!data.length){list.innerHTML='<div class="empty">記録がありません</div>';return;}
+  list.innerHTML=data.map(r=>{
+    const color=r.result==='win'?'var(--win)':'var(--loss)';
+    const sign=r.result==='win'?'+':'-';
+    const d=r.date?new Date(r.date).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    const tags=(r.conditions||[]).map(c=>`<span class="tdtag ${r.result==='win'?'wt':'lt'}">${c}</span>`).join('');
+    // thumbnail
+    const thumb=r.img
+      ?`<img class="tc-img-thumb" src="${r.img}" onclick="event.stopPropagation();LB('${r.img.replace(/'/g,"\\'")}','${d} ${r.symbol}')" title="チャートを拡大">`
+      :`<div class="tc-img-none"></div>`;
+    return `<div class="tc" style="--tcc:${color}">
+      <div class="tcm" onclick="TD(${r.id})">
+        <div class="tcd">${d}<br>${r.symbol}</div>
+        <div class="tcr ${r.result}">${sign}${r.pips}p</div>
+        <div class="tcu">${sign}\$${r.usd}</div>
+        <div class="tcmm">${r.memo||r.conditions&&r.conditions[0]||'—'}</div>
+        ${thumb}
+        <button class="tcdl" onclick="event.stopPropagation();DEL(${r.id})">✕</button>
+      </div>
+      <div class="tdet" id="td-${r.id}">
+        <div class="tdet-inner">
+          <div class="tdet-left">
+            <div class="tdl">${r.result==='win'?'達成条件':'負け原因'}</div>
+            <div class="tdt">${tags||'<span style="font-size:11px;color:var(--dim)">記録なし</span>'}</div>
+            ${r.memo?`<div class="tdl" style="margin-top:4px">メモ</div><div class="tdmt">${r.memo}</div>`:''}
+          </div>
+          <div class="tdet-right">
+            <div class="tdl">チャート</div>
+            ${r.img
+              ?`<img class="det-chart" src="${r.img}" onclick="LB('${r.img.replace(/'/g,"\\'")}','${d} ${r.symbol}')" title="拡大表示">`
+              :`<div class="det-no-img">NO IMAGE</div>`
+            }
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function TD(id){const e=document.getElementById('td-'+id);if(e)e.classList.toggle('open');}
+function DEL(id){SD(LD().filter(r=>r.id!==id));RL();}
+function CA(){if(!confirm('全記録を削除しますか？'))return;SD([]);RL();}
+</script>
+</body>
+</html>
