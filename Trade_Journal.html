@@ -59,7 +59,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filt
 .iu-icon{font-size:22px;margin-bottom:6px;opacity:0.35;}
 .iu-text{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);}
 .img-preview-wrap{margin-top:8px;position:relative;display:none;}
-.img-preview{width:100%;max-height:220px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
+.img-preview{width:100%;max-height:360px;object-fit:contain;background:#000;border:1px solid var(--border);cursor:pointer;}
 .img-remove{
   position:absolute;top:8px;right:8px;
   background:rgba(7,9,12,0.85);border:1px solid var(--loss);
@@ -173,7 +173,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filt
 
 /* Chart image in detail */
 .det-chart{
-  width:100%;border:1px solid var(--border);
+  width:100%;max-height:400px;object-fit:contain;background:#000;border:1px solid var(--border);
   cursor:pointer;transition:opacity 0.15s;
   display:block;
 }
@@ -245,6 +245,20 @@ nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filt
 .adj-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
 .adj-canvas-wrap img{max-width:90vw;max-height:80vh;object-fit:contain;transform-origin:center;cursor:grab;user-select:none;touch-action:none;}
 .adj-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);white-space:nowrap;}
+
+.adj-guide{position:absolute;pointer-events:none;border:2px solid rgba(61,158,232,0.8);box-shadow:0 0 0 9999px rgba(0,0,0,0.45);z-index:2;}
+.adj-guide::before{content:'保存範囲';position:absolute;top:-22px;left:0;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--neutral);background:rgba(0,0,0,0.7);padding:2px 6px;}
+.adj-corner{position:absolute;width:18px;height:18px;border-color:var(--neutral);border-style:solid;pointer-events:all;cursor:nwse-resize;z-index:3;}
+.adj-corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;cursor:nw-resize;}
+.adj-corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;cursor:ne-resize;}
+.adj-corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;cursor:sw-resize;}
+.adj-corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;cursor:se-resize;}
+.adj-edge{position:absolute;pointer-events:all;z-index:3;}
+.adj-edge.top{top:-4px;left:18px;right:18px;height:8px;cursor:n-resize;}
+.adj-edge.bottom{bottom:-4px;left:18px;right:18px;height:8px;cursor:s-resize;}
+.adj-edge.left{left:-4px;top:18px;bottom:18px;width:8px;cursor:w-resize;}
+.adj-edge.right{right:-4px;top:18px;bottom:18px;width:8px;cursor:e-resize;}
+
 </style>
 </head>
 <body>
@@ -433,7 +447,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filt
       <div style="margin-top:12px;">
         <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;">チャート画像</div>
         <div id="e-img-preview-wrap" style="display:none;position:relative;margin-bottom:8px;">
-          <img id="e-img-preview" style="width:100%;max-height:180px;object-fit:cover;border:1px solid var(--border);cursor:pointer;" onclick="LB(this.src,'編集中のチャート')">
+          <img id="e-img-preview" style="width:100%;max-height:300px;object-fit:contain;background:#000;border:1px solid var(--border);cursor:pointer;" onclick="LB(this.src,'編集中のチャート')">
           <button onclick="removeEditImg()" style="position:absolute;top:6px;right:6px;background:rgba(7,9,12,0.85);border:1px solid var(--loss);color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 10px;cursor:pointer;">✕ 削除</button>
         </div>
         <div id="e-img-upload-area" style="background:var(--s1);border:1px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;cursor:pointer;position:relative;min-height:70px;">
@@ -1157,6 +1171,156 @@ function saveEdit(){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
 }
+
+// ---- Image Adjuster ----
+let adjScale=1,adjX=0,adjY=0,adjDragging=false,adjDragX=0,adjDragY=0;
+let adjCallback=null;
+
+function openAdj(src, callback){
+  adjCallback=callback;
+  adjScale=1;adjX=0;adjY=0;
+  const img=document.getElementById('adj-img');
+  img.src=src;
+  img.onload=()=>{ updateGuide(); };
+  document.getElementById('img-adjuster').classList.add('open');
+  document.body.style.overflow='hidden';
+  setupAdjEvents();
+  setTimeout(updateGuide, 100);
+}
+function updateGuide(){
+  const wrap=document.getElementById('adj-wrap');
+  const guide=document.getElementById('adj-guide');
+  if(!wrap||!guide) return;
+  const ww=wrap.offsetWidth, wh=wrap.offsetHeight;
+  // Guide = 90% of wrap, centered, 16:9 aspect ratio capped
+  const gw=Math.round(ww*0.88);
+  const gh=Math.round(Math.min(wh*0.82, gw*0.65));
+  const gx=Math.round((ww-gw)/2);
+  const gy=Math.round((wh-gh)/2);
+  guide.style.width=gw+'px';
+  guide.style.height=gh+'px';
+  guide.style.left=gx+'px';
+  guide.style.top=gy+'px';
+}
+function closeAdj(){
+  document.getElementById('img-adjuster').classList.remove('open');
+  document.body.style.overflow='';
+}
+function adjZoom(f){adjScale=Math.min(Math.max(adjScale*f,0.2),8);applyAdj();}
+function adjReset(){adjScale=1;adjX=0;adjY=0;applyAdj();}
+function applyAdj(){
+  document.getElementById('adj-img').style.transform=`translate(${adjX}px,${adjY}px) scale(${adjScale})`;
+}
+function confirmAdj(){
+  const img=document.getElementById('adj-img');
+  const wrap=document.getElementById('adj-wrap');
+  const guide=document.getElementById('adj-guide');
+  const wrapRect=wrap.getBoundingClientRect();
+  const guideRect=guide.getBoundingClientRect();
+  // Guide relative to wrap
+  const gx=guideRect.left-wrapRect.left;
+  const gy=guideRect.top-wrapRect.top;
+  const gw=guideRect.width;
+  const gh=guideRect.height;
+  // Image display position
+  const imgRect=img.getBoundingClientRect();
+  const ix=imgRect.left-wrapRect.left;
+  const iy=imgRect.top-wrapRect.top;
+  const iw=imgRect.width;
+  const ih=imgRect.height;
+  // Crop in natural pixels
+  const scaleX=img.naturalWidth/iw;
+  const scaleY=img.naturalHeight/ih;
+  const cropX=Math.max(0,(gx-ix)*scaleX);
+  const cropY=Math.max(0,(gy-iy)*scaleY);
+  const cropW=Math.min(img.naturalWidth-cropX, gw*scaleX);
+  const cropH=Math.min(img.naturalHeight-cropY, gh*scaleY);
+  const outW=Math.min(1200,Math.round(cropW));
+  const outH=Math.max(1,Math.round(cropH*(outW/cropW)));
+  const canvas=document.createElement('canvas');
+  canvas.width=outW;canvas.height=outH;
+  canvas.getContext('2d').drawImage(img,cropX,cropY,cropW,cropH,0,0,outW,outH);
+  const result=canvas.toDataURL('image/jpeg',0.75);
+  closeAdj();
+  if(adjCallback)adjCallback(result);
+}
+function setupAdjEvents(){
+  const img=document.getElementById('adj-img');
+  const wrap=document.getElementById('adj-wrap');
+  img.onmousedown=e=>{adjDragging=true;adjDragX=e.clientX-adjX;adjDragY=e.clientY-adjY;img.style.cursor='grabbing';e.preventDefault();};
+  document.onmousemove=e=>{if(adjDragging){adjX=e.clientX-adjDragX;adjY=e.clientY-adjDragY;applyAdj();}};
+  document.onmouseup=()=>{if(adjDragging){adjDragging=false;document.getElementById('adj-img').style.cursor='grab';}};
+  wrap.onwheel=e=>{e.preventDefault();adjZoom(e.deltaY<0?1.1:0.9);};
+  let ld=0;
+  wrap.ontouchstart=e=>{
+    if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    else if(e.touches.length===1){adjDragging=true;adjDragX=e.touches[0].clientX-adjX;adjDragY=e.touches[0].clientY-adjY;}
+  };
+  wrap.ontouchmove=e=>{
+    e.preventDefault();
+    if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(ld>0)adjZoom(d/ld);ld=d;}
+    else if(e.touches.length===1&&adjDragging){adjX=e.touches[0].clientX-adjDragX;adjY=e.touches[0].clientY-adjDragY;applyAdj();}
+  };
+  wrap.ontouchend=()=>{adjDragging=false;ld=0;};
+}
+
+
+// ---- Guide resize ----
+let resizing=false,resizeDir='',resizeStartX=0,resizeStartY=0;
+let guideX=0,guideY=0,guideW=0,guideH=0;
+
+function startResize(e,dir){
+  e.preventDefault();e.stopPropagation();
+  resizing=true;resizeDir=dir;
+  resizeStartX=e.clientX;resizeStartY=e.clientY;
+  const g=document.getElementById('adj-guide');
+  guideX=parseInt(g.style.left);guideY=parseInt(g.style.top);
+  guideW=parseInt(g.style.width);guideH=parseInt(g.style.height);
+  document.onmousemove=onResizeMove;
+  document.onmouseup=stopResize;
+}
+function startResizeT(e,dir){
+  if(e.touches.length!==1)return;
+  e.preventDefault();e.stopPropagation();
+  resizing=true;resizeDir=dir;
+  resizeStartX=e.touches[0].clientX;resizeStartY=e.touches[0].clientY;
+  const g=document.getElementById('adj-guide');
+  guideX=parseInt(g.style.left);guideY=parseInt(g.style.top);
+  guideW=parseInt(g.style.width);guideH=parseInt(g.style.height);
+  document.ontouchmove=onResizeMoveT;
+  document.ontouchend=stopResize;
+}
+function onResizeMove(e){
+  if(!resizing)return;
+  doResize(e.clientX,e.clientY);
+}
+function onResizeMoveT(e){
+  if(!resizing||!e.touches[0])return;
+  doResize(e.touches[0].clientX,e.touches[0].clientY);
+}
+function doResize(cx,cy){
+  const dx=cx-resizeStartX,dy=cy-resizeStartY;
+  const wrap=document.getElementById('adj-wrap');
+  const minS=40;
+  let nx=guideX,ny=guideY,nw=guideW,nh=guideH;
+  if(resizeDir.includes('r')){nw=Math.max(minS,guideW+dx);}
+  if(resizeDir.includes('b')){nh=Math.max(minS,guideH+dy);}
+  if(resizeDir.includes('l')){const d=Math.min(dx,guideW-minS);nx=guideX+d;nw=guideW-d;}
+  if(resizeDir.includes('t')){const d=Math.min(dy,guideH-minS);ny=guideY+d;nh=guideH-d;}
+  // clamp to wrap
+  nx=Math.max(0,nx);ny=Math.max(0,ny);
+  nw=Math.min(nw,wrap.offsetWidth-nx);
+  nh=Math.min(nh,wrap.offsetHeight-ny);
+  const g=document.getElementById('adj-guide');
+  g.style.left=nx+'px';g.style.top=ny+'px';
+  g.style.width=nw+'px';g.style.height=nh+'px';
+}
+function stopResize(){
+  resizing=false;
+  document.onmousemove=null;document.onmouseup=null;
+  document.ontouchmove=null;document.ontouchend=null;
+}
+
 </script>
 
 <!-- IMAGE ADJUSTER MODAL -->
@@ -1174,7 +1338,17 @@ function saveEdit(){
   </div>
   <div class="adj-canvas-wrap" id="adj-wrap">
     <img id="adj-img" src="">
-    <div class="adj-hint">ドラッグで移動 / スクロール・ピンチで拡大縮小</div>
+    <div class="adj-guide" id="adj-guide">
+      <div class="adj-corner tl" onmousedown="startResize(event,'tl')" ontouchstart="startResizeT(event,'tl')"></div>
+      <div class="adj-corner tr" onmousedown="startResize(event,'tr')" ontouchstart="startResizeT(event,'tr')"></div>
+      <div class="adj-corner bl" onmousedown="startResize(event,'bl')" ontouchstart="startResizeT(event,'bl')"></div>
+      <div class="adj-corner br" onmousedown="startResize(event,'br')" ontouchstart="startResizeT(event,'br')"></div>
+      <div class="adj-edge top" onmousedown="startResize(event,'t')" ontouchstart="startResizeT(event,'t')"></div>
+      <div class="adj-edge bottom" onmousedown="startResize(event,'b')" ontouchstart="startResizeT(event,'b')"></div>
+      <div class="adj-edge left" onmousedown="startResize(event,'l')" ontouchstart="startResizeT(event,'l')"></div>
+      <div class="adj-edge right" onmousedown="startResize(event,'r')" ontouchstart="startResizeT(event,'r')"></div>
+    </div>
+    <div class="adj-hint">青枠内が保存される範囲 / ドラッグで移動 / ピンチで拡大縮小</div>
   </div>
 </div>
 
