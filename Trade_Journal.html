@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>トレードジャーナル</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090c;--s1:#0d1117;--s2:#111820;--border:#1c2535;--win:#00d97e;--win-dim:rgba(0,217,126,0.1);--loss:#ff3d5a;--loss-dim:rgba(255,61,90,0.1);--neutral:#3d9ee8;--text:#dde4ed;--dim:#3d5068;--dim2:#1e2d3d;--gold:#f0b400;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 50%,rgba(61,158,232,0.05) 0%,transparent 50%),radial-gradient(circle at 85% 20%,rgba(0,217,126,0.04) 0%,transparent 40%),repeating-linear-gradient(0deg,transparent,transparent 56px,rgba(255,255,255,0.016) 56px,rgba(255,255,255,0.016) 57px),repeating-linear-gradient(90deg,transparent,transparent 56px,rgba(255,255,255,0.016) 56px,rgba(255,255,255,0.016) 57px);pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(7,9,12,0.96);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;}
+.nav-brand{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;color:var(--text);}
+.nav-tabs{display:flex;gap:2px;}
+.tab-btn{background:none;border:none;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--dim);padding:7px 14px;border-bottom:2px solid transparent;transition:all 0.2s;}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--neutral);}
+.tab-btn:hover{color:var(--text);}
+
+.main{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:32px 20px;}
+.view{display:none;}.view.active{display:block;}
+.ph{margin-bottom:28px;}.ph h2{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;margin-bottom:4px;}.ph p{font-size:12px;color:var(--dim);letter-spacing:1px;}
+
+/* RESULT TOGGLE */
+.rtog{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);margin-bottom:20px;}
+.rtb{background:none;border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;padding:14px;transition:all 0.2s;color:var(--dim);}
+.rtb.win.active{background:var(--win-dim);color:var(--win);border-bottom:2px solid var(--win);}
+.rtb.loss.active{background:var(--loss-dim);color:var(--loss);border-bottom:2px solid var(--loss);}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.ff{grid-column:1/-1;}
+.field label{display:block;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;padding:10px 12px;outline:none;transition:border-color 0.2s;appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--neutral);}
+.field textarea{resize:vertical;min-height:64px;font-family:'Noto Sans JP',sans-serif;font-size:12px;line-height:1.6;}
+.field select option{background:#0d1117;}
+
+/* CONDITIONS */
+.cs{margin-bottom:12px;}.ct{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;}
+.cg{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;}
+.ci{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);padding:13px 14px;cursor:pointer;transition:all 0.15s;font-size:13px;color:var(--dim);min-height:46px;}
+.ci:hover{color:var(--text);border-color:var(--dim);}
+.cd{width:5px;height:5px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background 0.15s;}
+.ci.checked.wc{border-color:var(--win);color:var(--win);background:var(--win-dim);}.ci.checked.wc .cd{background:var(--win);}
+.ci.checked.lc{border-color:var(--loss);color:var(--loss);background:var(--loss-dim);}.ci.checked.lc .cd{background:var(--loss);}
+
+/* IMAGE UPLOAD */
+.img-upload-wrap{margin-bottom:12px;}
+.img-upload-area{
+  background:var(--s1);border:1px dashed var(--border);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;cursor:pointer;transition:all 0.2s;position:relative;min-height:90px;
+}
+.img-upload-area:hover{border-color:var(--neutral);}
+.img-upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.iu-icon{font-size:22px;margin-bottom:6px;opacity:0.35;}
+.iu-text{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim);}
+.img-preview-wrap{margin-top:8px;position:relative;display:none;}
+.img-preview{width:100%;max-height:360px;object-fit:contain;background:#000;border:1px solid var(--border);cursor:pointer;}
+.img-remove{
+  position:absolute;top:8px;right:8px;
+  background:rgba(7,9,12,0.85);border:1px solid var(--loss);
+  color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:10px;
+  padding:4px 10px;cursor:pointer;
+}
+.img-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+
+/* SUBMIT */
+.sbtn{width:100%;border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:4px;padding:14px;margin-top:12px;transition:opacity 0.2s;}
+.sbtn.wb{background:var(--win);color:#000;}.sbtn.lb{background:var(--loss);color:#fff;}.sbtn:hover{opacity:0.85;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:12px 20px;transform:translateY(80px);opacity:0;transition:all 0.3s;}
+.toast.wt{background:var(--win);color:#000;}.toast.lt{background:var(--loss);color:#fff;}.toast.show{transform:translateY(0);opacity:1;}
+
+/* ANALYSIS */
+.wrb{background:var(--s1);border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:20px;}
+.wrc{padding:18px 20px;border-right:1px solid var(--border);}.wrc:last-child{border-right:none;}
+.wrl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:6px;}
+.wrv{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:2px;line-height:1;}
+.wrs{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px;}
+.wrbw{margin-bottom:20px;}
+.wrt{height:8px;background:var(--loss-dim);border:1px solid var(--border);}
+.wrf{height:100%;background:var(--win);transition:width 0.6s ease;}
+.wrbl{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-top:5px;}
+.kr{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
+.kpi{background:var(--s1);border:1px solid var(--border);padding:14px 16px;}
+.kpi .kl{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;}
+.kpi .kv{font-family:'Share Tech Mono',monospace;font-size:20px;font-weight:700;}
+.kv.pos{color:var(--win);}.kv.neg{color:var(--loss);}.kv.neu{color:var(--neutral);}
+.ib{background:var(--s2);border:1px solid var(--border);border-left:3px solid var(--gold);padding:16px 20px;margin-bottom:20px;}
+.il{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;}
+.ii{display:flex;flex-direction:column;gap:6px;}
+.iitem{font-size:12px;color:var(--text);display:flex;gap:8px;align-items:flex-start;}
+.iitem::before{content:'›';color:var(--gold);font-size:14px;flex-shrink:0;line-height:1.3;}
+.tc2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.ac{background:var(--s1);border:1px solid var(--border);padding:16px 18px;}
+.act{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:12px;text-transform:uppercase;}
+.cbr{margin-bottom:8px;}
+.cbrt{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;}
+.cbrl{color:var(--text);}.cbrs{font-family:'Share Tech Mono',monospace;color:var(--dim);}
+.cbrk{height:4px;background:var(--dim2);}
+.cbrf{height:100%;transition:width 0.5s ease;}
+.cbrf.wf{background:var(--win);}.cbrf.lf{background:var(--loss);}
+
+/* LIST */
+.lc2{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.fg2{display:flex;gap:5px;}
+.fb{background:var(--s1);border:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--dim);padding:6px 12px;cursor:pointer;transition:all 0.15s;}
+.fb.active{border-color:var(--neutral);color:var(--neutral);}
+.fb.wf.active{border-color:var(--win);color:var(--win);}
+.fb.lf.active{border-color:var(--loss);color:var(--loss);}
+.clr{background:none;border:1px solid var(--dim2);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:6px 12px;cursor:pointer;transition:all 0.2s;}
+.clr:hover{border-color:var(--loss);color:var(--loss);}
+
+.tl{display:flex;flex-direction:column;gap:6px;}
+.tc{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--tcc,var(--border));overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
+.tc:hover{border-color:var(--tcc);}
+
+/* Trade card header */
+.tcm{display:grid;grid-template-columns:130px 70px 80px 80px 1fr auto;gap:10px;align-items:center;padding:12px 16px;}
+.tcd{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);line-height:1.5;}
+.tcr{font-family:'Share Tech Mono',monospace;font-size:14px;font-weight:700;}
+.tcr.win{color:var(--win);}.tcr.loss{color:var(--loss);}
+.tcu{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);}
+.tcrr{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--neutral);}
+.tcmm{font-size:11px;color:#6a7f94;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tcdl{background:none;border:none;color:var(--dim2);font-size:13px;cursor:pointer;padding:4px;transition:color 0.2s;}
+.tcdl:hover{color:var(--loss);}
+
+/* Detail expand */
+.tdet{display:none;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg);}
+.tdet.open{display:block;}
+
+/* Chart section in detail */
+.tdet-inner{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.tdet-left{}
+.tdet-right{}
+.tdl{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:6px;text-transform:uppercase;}
+.tdt{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;}
+.tdtag{font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid;}
+.tdtag.wt{border-color:rgba(0,217,126,0.3);color:var(--win);}
+.tdtag.lt{border-color:rgba(255,61,90,0.3);color:var(--loss);}
+.tdmt{font-size:11px;color:#6a7f94;line-height:1.6;}
+
+/* Chart image in detail */
+.det-chart{
+  width:100%;max-height:180px;object-fit:contain;background:#000;
+  margin-top:8px;border:1px solid var(--border);
+  cursor:pointer;transition:opacity 0.15s;display:block;
+}
+.det-chart:hover{opacity:0.85;}
+.det-no-img{
+  width:100%;height:100px;
+  background:var(--s2);border:1px dashed var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;color:var(--dim2);
+}
+
+.empty{text-align:center;padding:60px 20px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:2px;}
+/* EDIT MODAL */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border);width:100%;max-width:620px;max-height:96vh;overflow-y:auto;}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:46px 20px 16px;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--text);}
+.modal-close{background:none;border:none;color:var(--dim);font-size:18px;cursor:pointer;padding:4px 8px;}
+.modal-close:hover{color:var(--loss);}
+.modal-body{padding:20px;}
+.modal-footer{padding:16px 20px 46px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.modal-save{background:var(--neutral);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:3px;padding:10px 24px;cursor:pointer;}
+.modal-save:hover{opacity:0.85;}
+.modal-cancel{background:none;border:1px solid var(--dim);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;padding:10px 16px;cursor:pointer;}
+.modal-cancel:hover{border-color:var(--text);color:var(--text);}
+.edit-result-toggle{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);margin-bottom:12px;}
+.ertb{background:none;border:none;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;padding:10px;transition:all 0.2s;color:var(--dim);}
+.ertb.win.active{background:var(--win-dim);color:var(--win);border-bottom:2px solid var(--win);}
+.ertb.loss.active{background:var(--loss-dim);color:var(--loss);border-bottom:2px solid var(--loss);}
+
+
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.96);display:none;flex-direction:column;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lb-toolbar{position:fixed;top:0;left:0;right:0;z-index:1001;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(7,9,12,0.9);border-bottom:1px solid var(--border);}
+.lb-tools{display:flex;gap:6px;}
+.lb-tool-btn{background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 12px;cursor:pointer;letter-spacing:1px;transition:all 0.15s;}
+.lb-tool-btn:hover{border-color:var(--neutral);color:var(--neutral);}
+.lb-tool-btn.active{border-color:var(--gold);color:var(--gold);}
+.lb-close{background:none;border:1px solid var(--dim);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:11px;padding:6px 14px;cursor:pointer;letter-spacing:1px;}
+.lb-close:hover{border-color:var(--loss);color:var(--loss);}
+.lb-canvas-wrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:48px;}
+.lb-hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);}
+.crop-overlay{position:absolute;border:2px dashed var(--gold);cursor:crosshair;display:none;}
+.lb-nav-btn{position:fixed;top:50%;transform:translateY(-50%);background:rgba(7,9,12,0.7);border:1px solid var(--border);color:var(--text);font-size:24px;width:48px;height:48px;cursor:pointer;z-index:1000;display:none;align-items:center;justify-content:center;transition:all 0.15s;}
+.lb-nav-btn:hover{background:rgba(61,158,232,0.3);border-color:var(--neutral);}
+.lb-nav-btn.show{display:flex;}
+.lb-nav-prev{left:16px;}
+.lb-nav-next{right:16px;}
+.lb-counter{position:fixed;top:64px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--text);background:rgba(7,9,12,0.7);padding:4px 12px;border:1px solid var(--border);display:none;z-index:1000;}
+.lb-counter.show{display:block;}
+.lb-thumb-strip{position:fixed;bottom:48px;left:50%;transform:translateX(-50%);display:none;gap:6px;z-index:1000;}
+.lb-thumb-strip.show{display:flex;}
+.lb-thumb{width:48px;height:36px;object-fit:cover;border:2px solid transparent;cursor:pointer;opacity:0.6;transition:all 0.15s;}
+.lb-thumb.active{border-color:var(--neutral);opacity:1;}
+.lb-thumb:hover{opacity:1;}
+
+@media(max-width:640px){
+  .fg{grid-template-columns:1fr;}
+  .kr{grid-template-columns:repeat(2,1fr);}
+  .wrb{grid-template-columns:1fr;}
+  .wrc{border-right:none;border-bottom:1px solid var(--border);}
+  .wrc:last-child{border-bottom:none;}
+  .tc2{grid-template-columns:1fr;}
+  .tcm{grid-template-columns:1fr 1fr auto auto;grid-template-rows:auto auto;}
+  .tcmm{grid-column:1/-1;}
+  .tdet-inner{grid-template-columns:1fr;}
+  .cg{grid-template-columns:1fr;}
+}
+
+/* IMAGE ADJUSTER */
+.img-adjuster{position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.97);display:none;flex-direction:column;}
+.img-adjuster.open{display:flex;}
+.adj-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(7,9,12,0.95);border-bottom:1px solid var(--border);flex-shrink:0;}
+.adj-tools{display:flex;gap:6px;flex-wrap:wrap;}
+.adj-btn{background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:1px;transition:all 0.15s;}
+.adj-btn:hover{border-color:var(--neutral);color:var(--neutral);}
+.adj-btn.primary{background:var(--win);border-color:var(--win);color:#000;font-weight:700;}
+.adj-btn.primary:hover{opacity:0.85;}
+.adj-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+.adj-canvas-wrap img{max-width:90vw;max-height:80vh;object-fit:contain;transform-origin:center;cursor:grab;user-select:none;touch-action:none;}
+.adj-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);white-space:nowrap;}
+
+.adj-guide{position:absolute;pointer-events:none;border:2px solid rgba(61,158,232,0.8);box-shadow:0 0 0 9999px rgba(0,0,0,0.45);z-index:2;}
+.adj-guide::before{content:'保存範囲';position:absolute;top:-22px;left:0;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--neutral);background:rgba(0,0,0,0.7);padding:2px 6px;}
+.adj-corner{position:absolute;width:18px;height:18px;border-color:var(--neutral);border-style:solid;pointer-events:all;cursor:nwse-resize;z-index:3;}
+.adj-corner.tl{top:-2px;left:-2px;border-width:3px 0 0 3px;cursor:nw-resize;}
+.adj-corner.tr{top:-2px;right:-2px;border-width:3px 3px 0 0;cursor:ne-resize;}
+.adj-corner.bl{bottom:-2px;left:-2px;border-width:0 0 3px 3px;cursor:sw-resize;}
+.adj-corner.br{bottom:-2px;right:-2px;border-width:0 3px 3px 0;cursor:se-resize;}
+.adj-edge{position:absolute;pointer-events:all;z-index:3;}
+.adj-edge.top{top:-4px;left:18px;right:18px;height:8px;cursor:n-resize;}
+.adj-edge.bottom{bottom:-4px;left:18px;right:18px;height:8px;cursor:s-resize;}
+.adj-edge.left{left:-4px;top:18px;bottom:18px;width:8px;cursor:w-resize;}
+.adj-edge.right{right:-4px;top:18px;bottom:18px;width:8px;cursor:e-resize;}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">TRADE JOURNAL</div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="V('record')">記録</button>
+    <button class="tab-btn" onclick="V('analysis')">分析</button>
+    <button class="tab-btn" onclick="V('list')">一覧</button>
+    <button class="tab-btn" onclick="V('ai')" style="color:var(--gold);">AI入力</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- RECORD -->
+  <div id="view-record" class="view active">
+    <div class="ph"><h2>トレード記録</h2><p>勝ち・負け両方を記録する</p></div>
+    <div class="rtog">
+      <button class="rtb win active" id="bw" onclick="SR('win')">▲ WIN</button>
+      <button class="rtb loss" id="bl" onclick="SR('loss')">▼ LOSS</button>
+    </div>
+    <div class="fg">
+      <div class="field"><label>日時</label><input type="datetime-local" id="fd"></div>
+      <div class="field">
+        <label>銘柄 <span id="sym-edit-btn" onclick="toggleSymEdit()" style="cursor:pointer;color:var(--neutral);font-size:8px;letter-spacing:1px;margin-left:6px;">＋ 編集</span></label>
+        <select id="fs"></select>
+        <div id="sym-edit-panel" style="display:none;margin-top:6px;">
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="sym-new-input" placeholder="例: GBPJPY" style="flex:1;background:var(--s1);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 10px;outline:none;">
+            <button onclick="addSym()" style="background:var(--neutral);border:none;color:#000;font-family:'Share Tech Mono',monospace;font-size:11px;padding:8px 14px;cursor:pointer;white-space:nowrap;">追加</button>
+          </div>
+          <div id="sym-list" style="margin-top:6px;"></div>
+        </div>
+      </div>
+      <div class="field"><label>pips</label><input type="number" id="fp" placeholder="例: 23" oninput="calcRR()"></div>
+      <div class="field"><label>$ (USD)</label><input type="number" id="fu" placeholder="例: 340"></div>
+      <div class="field"><label>リスク pips (SL幅)</label><input type="number" id="fsl" placeholder="例: 10" oninput="calcRR()"></div>
+      <div class="field"><label>方向</label><select id="fdr"><option>Buy（ロング）</option><option>Sell（ショート）</option></select></div>
+      <div class="field"><label>5分足バイアス</label><select id="fb5"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
+      <div class="field"><label>15分足バイアス</label><select id="fb15"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
+      <div class="field"><label>50EMA実体確定</label><select id="fema"><option value="Yes">✅ 確定後エントリー</option><option value="No">⚡ 途中でエントリー</option></select></div>
+    </div>
+    <div class="field ff" style="margin-bottom:10px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;">RR Ratio</div>
+      <div id="rr-display" style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:2px;color:var(--neutral);text-align:center;padding:6px 0;">—</div>
+    </div>
+
+    <div class="cs" id="wcs"><div class="ct">勝ちパターン条件（満たしたものを選択） <span onclick="toggleCondEdit('win')" style="cursor:pointer;color:var(--neutral);font-size:11px;letter-spacing:1px;margin-left:8px;padding:6px 12px;border:1px solid var(--border);display:inline-block;">⚙ カテゴリー編集</span></div><div id="win-cond-edit-panel" style="display:none;background:var(--s1);border:1px solid var(--border);padding:12px;margin-bottom:10px;"></div><div class="cg" id="wcg"></div></div>
+    <div class="cs" id="lcs" style="display:none"><div class="ct">負けパターン原因（該当するものを選択） <span onclick="toggleCondEdit('loss')" style="cursor:pointer;color:var(--neutral);font-size:11px;letter-spacing:1px;margin-left:8px;padding:6px 12px;border:1px solid var(--border);display:inline-block;">⚙ カテゴリー編集</span></div><div id="loss-cond-edit-panel" style="display:none;background:var(--s1);border:1px solid var(--border);padding:12px;margin-bottom:10px;"></div><div class="cg" id="lcg"></div></div>
+
+    <div class="field ff" style="margin-top:4px;margin-bottom:12px;">
+      <label>メモ・気づき</label>
+      <textarea id="fm" placeholder="違和感、感情、気づいたこと..."></textarea>
+    </div>
+
+    <!-- Image upload -->
+    <div class="img-upload-wrap">
+      <div class="img-label">チャート画像（複数可）</div>
+      <div class="img-upload-area" id="upload-area">
+        <input type="file" accept="image/*" id="fimg" onchange="addImgs()">
+        <div class="iu-icon" id="uicon">📊</div>
+        <div class="iu-text" id="utxt">タップして追加（複数枚OK）</div>
+      </div>
+      <div id="imgs-preview-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;"></div>
+    </div>
+
+    <button class="sbtn wb" id="sbtn" onclick="save()">WIN を記録する</button>
+  </div>
+
+  <!-- ANALYSIS -->
+  <div id="view-analysis" class="view">
+    <div class="ph"><h2>分析</h2><p id="asub">記録なし</p></div>
+    <div class="wrb">
+      <div class="wrc">
+        <div class="wrl">WIN RATE</div>
+        <div class="wrv" id="awr" style="color:var(--gold)">—</div>
+        <div class="wrs" id="awl">0勝 0敗</div>
+      </div>
+      <div class="wrc">
+        <div class="wrl">純損益</div>
+        <div class="wrv" id="anet" style="color:var(--text);font-size:32px">—</div>
+        <div class="wrs" id="anets">—</div>
+      </div>
+      <div class="wrc">
+        <div class="wrl">平均利益 / 平均損失</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-top:4px;">
+          <div><div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);margin-bottom:2px;">AVG WIN</div><div class="wrv" id="aavgw" style="color:var(--win);font-size:28px">—</div></div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:18px;color:var(--dim);padding-bottom:4px;">/</div>
+          <div><div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--loss);margin-bottom:2px;">AVG LOSS</div><div class="wrv" id="aavgl" style="color:var(--loss);font-size:28px">—</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="wrbw">
+      <div class="wrt"><div class="wrf" id="wrbar" style="width:0%"></div></div>
+      <div class="wrbl"><span id="wbrl">WIN 0%</span><span id="wbrr">LOSS 0%</span></div>
+    </div>
+    <div class="kr">
+      <div class="kpi"><div class="kl">総利益 $</div><div class="kv pos" id="apro">—</div></div>
+      <div class="kpi"><div class="kl">総損失 $</div><div class="kv neg" id="alos">—</div></div>
+      <div class="kpi"><div class="kl">総利益 pips</div><div class="kv pos" id="awp">—</div></div>
+      <div class="kpi"><div class="kl">総損失 pips</div><div class="kv neg" id="alp">—</div></div>
+      <div class="kpi"><div class="kl">記録数</div><div class="kv neu" id="acnt">—</div></div>
+    </div>
+    <div class="ib" id="ibox" style="display:none">
+      <div class="il">INSIGHT — あなたの傾向</div>
+      <div class="ii" id="iitems"></div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--border);padding:16px 18px;margin-bottom:16px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:12px;text-transform:uppercase;">上位足バイアス一致率</div>
+      <div id="bias-analysis"></div>
+    </div>
+    <div class="tc2">
+      <div class="ac"><div class="act">勝ちやすい条件（達成率）</div><div id="wbars"></div></div>
+      <div class="ac"><div class="act">負けやすい条件（頻度）</div><div id="lbars"></div></div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div id="view-ai" class="view">
+    <div class="ph">
+      <h2>AI入力</h2>
+      <p>ClaudeのチャットからJSONを貼り付けて自動入力</p>
+    </div>
+
+    <!-- Step 1 -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--gold);padding:16px 20px;margin-bottom:16px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">STEP 01 — Claudeに送るプロンプト</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.7;margin-bottom:12px;">以下をコピーしてClaudeのチャットに送ってください。<br>チャート画像と結果テキストも一緒に添付してください。</div>
+      <div style="background:var(--bg);border:1px solid var(--border);padding:12px 14px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#8a9ab0;line-height:1.8;position:relative;">
+        <div id="prompt-text">以下のトレード結果を読み取り、JSON形式のみで出力してください。他の文章は一切不要です。
+
+出力形式：
+{
+  "date": "YYYY-MM-DDTHH:MM",
+  "symbol": "NASDAQ / MNQ",
+  "result": "win または loss",
+  "pips": 数値,
+  "usd": 数値（絶対値）,
+  "sl": 数値またはnull,
+  "rr": 数値またはnull,
+  "dir": "Buy（ロング） または Sell（ショート）",
+  "bias5": "一致 または 不一致 または 中立",
+  "bias15": "一致 または 不一致 または 中立",
+  "ema50": "✅ 確定後エントリー または ⚡ 途中でエントリー",
+  "conditions": ["該当する条件を配列で"],
+  "memo": "気づき・根拠など"
+}
+
+勝ちパターン条件（conditionsに含められるもの）:
+蓄積あり（Sweep前にレンジ）, 前足の質：実体>ヒゲ・長いヒゲなし, Sweep（流動性狩り）あり, 包み足あり（Sweep後）, Sweep直後 × EMAクロスあり, 有利な価格でエントリー（待てた）, BOS確定, EMA実体抜け, 流動性後の反応が強い, ニュースなし, ボリュームあり, 強いゾーンなし, 20pips以上の余地, リテスト後エントリー
+
+負けパターン条件（conditionsに含められるもの）:
+ニュース中/前後, ボリューム弱い, 強いゾーンが近い, 利幅20pips未満, 流動性後に否定, レンジ内, EMAヒゲ抜けのみ, BOS前エントリー, 違和感→強行</div>
+        <button onclick="copyPrompt()" style="position:absolute;top:8px;right:8px;background:var(--s1);border:1px solid var(--border);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;letter-spacing:1px;" id="copy-btn">コピー</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--neutral);padding:16px 20px;margin-bottom:16px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--neutral);margin-bottom:10px;">STEP 02 — JSONを貼り付け</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:10px;">ClaudeのチャットからJSONをコピーして貼り付けてください。</div>
+      <textarea id="ai-json-input" placeholder='{ "date": "2026-04-07T22:40", "symbol": "NASDAQ / MNQ", ... }' style="width:100%;min-height:140px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:12px;outline:none;resize:vertical;line-height:1.6;"></textarea>
+      <button onclick="parseAIJson()" style="width:100%;background:var(--neutral);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;padding:12px;margin-top:8px;cursor:pointer;">フォームに自動入力する</button>
+      <div id="ai-error" style="display:none;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--loss);padding:8px 12px;background:var(--loss-dim);border:1px solid var(--loss);"></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--win);padding:16px 20px;margin-bottom:16px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--win);margin-bottom:8px;">STEP 03 — 確認して記録</div>
+      <div style="font-size:12px;color:var(--dim);">自動入力後、「記録」タブで内容を確認してから「記録する」ボタンを押してください。</div>
+    </div>
+
+    <!-- Export section -->
+    <div style="background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--neutral);padding:16px 20px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--neutral);margin-bottom:10px;">一括エクスポート — Claudeに分析してもらう用</div>
+      <div style="font-size:12px;color:var(--text);margin-bottom:14px;line-height:1.6;">全記録のデータと画像をZIPファイルでまとめてダウンロードします。<br>そのままClaudeにアップロードして分析を依頼できます。</div>
+      <button onclick="exportAllData()" id="export-btn" style="width:100%;background:var(--neutral);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;padding:12px;cursor:pointer;">📦 全記録をZIPでエクスポート</button>
+      <div id="export-progress" style="display:none;margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);"></div>
+      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">バックアップ / 復元 — データ保護用</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.6;">記録・画像・銘柄リストを1つのファイルに保存します。URL変更やPC移行の前に必ずバックアップを取ってください。</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="backupAll()" id="backup-btn" style="background:none;border:1px solid var(--gold);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:10px;cursor:pointer;">💾 バックアップ保存</button>
+          <button onclick="document.getElementById('restore-file').click()" style="background:none;border:1px solid var(--dim);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;padding:10px;cursor:pointer;">📂 バックアップから復元</button>
+        </div>
+        <input type="file" id="restore-file" accept=".json" style="display:none;" onchange="restoreAll(this.files[0])">
+        <div id="backup-progress" style="display:none;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-list" class="view">
+    <div class="lc2">
+      <div class="fg2">
+        <button class="fb active" onclick="SF('all',this)">ALL</button>
+        <button class="fb wf" onclick="SF('win',this)">WIN</button>
+        <button class="fb lf" onclick="SF('loss',this)">LOSS</button>
+      </div>
+      <button class="clr" onclick="CA()">全削除</button>
+    </div>
+    <div class="tl" id="tlist"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-toolbar">
+    <div class="lb-tools">
+      <button class="lb-tool-btn" onclick="lbZoom(1.2)" title="拡大">＋ 拡大</button>
+      <button class="lb-tool-btn" onclick="lbZoom(0.8)" title="縮小">－ 縮小</button>
+      <button class="lb-tool-btn" onclick="lbReset()" title="リセット">↺ リセット</button>
+      <button class="lb-tool-btn" id="crop-btn" onclick="toggleCrop()" title="トリミング">✂ トリミング</button>
+    </div>
+    <button class="lb-close" onclick="CLB()">✕ 閉じる</button>
+  </div>
+  <div class="lb-canvas-wrap" id="lb-wrap">
+    <img id="lb-img" src="" style="max-width:90vw;max-height:85vh;object-fit:contain;transform-origin:center;cursor:grab;user-select:none;">
+    <div class="crop-overlay" id="crop-overlay"></div>
+  </div>
+  <div class="lb-hint" id="lb-hint">ドラッグで移動 / スクロールで拡大縮小</div>
+  <button class="lb-nav-btn lb-nav-prev" id="lb-prev" onclick="lbNav(-1)">‹</button>
+  <button class="lb-nav-btn lb-nav-next" id="lb-next" onclick="lbNav(1)">›</button>
+  <div class="lb-counter" id="lb-counter"></div>
+  <div class="lb-thumb-strip" id="lb-thumb-strip"></div>
+</div>
+
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">記録を編集</div>
+      <button class="modal-close" onclick="closeEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="edit-result-toggle">
+        <button class="ertb win" id="ertb-win" onclick="setEditResult('win')">▲ WIN</button>
+        <button class="ertb loss" id="ertb-loss" onclick="setEditResult('loss')">▼ LOSS</button>
+      </div>
+      <div class="fg" style="margin-bottom:10px;">
+        <div class="field"><label>日時</label><input type="datetime-local" id="e-date"></div>
+        <div class="field"><label>銘柄</label><select id="e-symbol"></select></div>
+        <div class="field"><label>pips</label><input type="number" id="e-pips" placeholder="例: 23" oninput="calcEditRR()"></div>
+        <div class="field"><label>$ (USD)</label><input type="number" id="e-usd" placeholder="例: 340"></div>
+        <div class="field"><label>リスク pips (SL幅)</label><input type="number" id="e-sl" placeholder="例: 10" oninput="calcEditRR()"></div>
+        <div class="field"><label>方向</label><select id="e-dir"><option>Buy（ロング）</option><option>Sell（ショート）</option></select></div>
+        <div class="field"><label>5分足バイアス</label><select id="e-bias5"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
+        <div class="field"><label>15分足バイアス</label><select id="e-bias15"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
+        <div class="field"><label>50EMA実体確定</label><select id="e-ema50"><option value="Yes">✅ 確定後エントリー</option><option value="No">⚡ 途中でエントリー</option></select></div>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;">RR Ratio</div>
+      <div id="e-rr" style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--neutral);text-align:center;padding:4px 0;margin-bottom:12px;">—</div>
+      <div class="cs" id="e-wcs"><div class="ct">勝ちパターン条件</div><div class="cg" id="e-wcg"></div></div>
+      <div class="cs" id="e-lcs"><div class="ct">負けパターン原因</div><div class="cg" id="e-lcg"></div></div>
+      <div class="field ff" style="margin-top:8px;">
+        <label>メモ</label>
+        <textarea id="e-memo" style="min-height:60px;"></textarea>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;">チャート画像（複数可）</div>
+        <div id="e-imgs-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;"></div>
+        <div id="e-img-upload-area" style="background:var(--s1);border:1px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;cursor:pointer;position:relative;min-height:70px;">
+          <input type="file" accept="image/*" id="e-img-file" onchange="editAddImgs()" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">
+          <div style="font-size:18px;opacity:0.35;margin-bottom:4px;">📊</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--dim);">タップして追加</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" onclick="closeEdit()">キャンセル</button>
+      <button class="modal-save" onclick="saveEdit()">保存する</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+
+// ===== IndexedDB for images =====
+const IDB_NAME = 'trade_imgs';
+const IDB_STORE = 'images';
+let idb = null;
+
+function openIDB(){
+  return new Promise((resolve, reject)=>{
+    if(idb){resolve(idb);return;}
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+    req.onerror = e => reject(e);
+  });
+}
+
+async function saveImg(id, dataUrl){
+  if(!dataUrl) return;
+  try{
+    const db = await openIDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(dataUrl, String(id));
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>{ console.warn('saveImg failed for', id); resolve(false); };
+      tx.onabort = ()=>{ console.warn('saveImg aborted for', id); resolve(false); };
+    });
+  } catch(e){ console.warn('saveImg error', e); return false; }
+}
+
+async function loadImg(id){
+  try{
+    const db = await openIDB();
+    return new Promise((resolve)=>{
+      const req = db.transaction(IDB_STORE).objectStore(IDB_STORE).get(String(id));
+      req.onsuccess = e => resolve(e.target.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch(e){ return null; }
+}
+
+async function deleteImg(id){
+  try{
+    const db = await openIDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(String(id));
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  } catch(e){}
+}
+
+// ---- Multi-image helpers (key format: recordId_index) ----
+async function saveImgs(recId, dataUrls){
+  if(!dataUrls || !dataUrls.length) return;
+  for(let i=0; i<dataUrls.length; i++){
+    await saveImg(`${recId}_${i}`, dataUrls[i]);
+  }
+}
+async function loadImgs(recId, count){
+  const results = [];
+  for(let i=0; i<count; i++){
+    const img = await loadImg(`${recId}_${i}`);
+    if(img) results.push(img);
+  }
+  return results;
+}
+async function deleteImgs(recId, count){
+  for(let i=0; i<count; i++){
+    await deleteImg(`${recId}_${i}`);
+  }
+}
+
+async function migrateImgsToIDB(data, saveDataFn){
+  // Move base64 imgs from localStorage records to IDB
+  let migrated = 0;
+  for(const r of data){
+    if(r.img && r.img.startsWith('data:')){
+      await saveImg(r.id, r.img);
+      r.img = '__IDB__';
+      migrated++;
+    }
+  }
+  if(migrated > 0) saveDataFn(data);
+  return migrated;
+}
+// ===== End IndexedDB =====
+
+// ---- HTML escape ----
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ---- Backup / Restore ----
+async function backupAll(){
+  const btn=document.getElementById('backup-btn');
+  const prog=document.getElementById('backup-progress');
+  btn.disabled=true; prog.style.display='block'; prog.textContent='画像を収集中...';
+  try{
+    const imgs={};
+    const db=await openIDB();
+    await new Promise(res=>{
+      const c=db.transaction(IDB_STORE).objectStore(IDB_STORE).openCursor();
+      c.onsuccess=e=>{const cur=e.target.result;if(cur){imgs[cur.key]=cur.value;cur.continue();}else res();};
+      c.onerror=res;
+    });
+    const payload={app:'trade_journal',version:1,created:new Date().toISOString(),records:LD(),symbols:loadSyms(),winConds:WC,lossConds:LC,images:imgs};
+    const blob=new Blob([JSON.stringify(payload)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`trade_journal_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    prog.textContent=`✓ ${payload.records.length}件の記録・画像${Object.keys(imgs).length}件を保存しました`;
+  }catch(e){
+    console.error('backup failed',e);
+    prog.textContent='✗ バックアップに失敗しました';
+  }
+  btn.disabled=false;
+}
+async function restoreAll(file){
+  if(!file)return;
+  const prog=document.getElementById('backup-progress');
+  prog.style.display='block';
+  try{
+    const b=JSON.parse(await file.text());
+    if(!Array.isArray(b.records)){alert('バックアップ形式が不正です');prog.style.display='none';return;}
+    if(!confirm(`${b.records.length}件の記録を復元します。\n現在のデータは上書きされます。よろしいですか？`)){prog.style.display='none';return;}
+    prog.textContent='復元中...';
+    SD(b.records);
+    if(b.symbols) saveSyms(b.symbols);
+    if(Array.isArray(b.winConds)&&b.winConds.length){ WC=b.winConds; }
+    if(Array.isArray(b.lossConds)&&b.lossConds.length){ LC=b.lossConds; }
+    saveConds();
+    BG('wcg',WC,'wc');BG('lcg',LC,'lc');
+    renderPromptText();
+    if(b.images){
+      const entries=Object.entries(b.images);
+      for(const [k,v] of entries) await saveImg(k,v);
+    }
+    prog.textContent=`✓ ${b.records.length}件を復元しました`;
+    RL();
+  }catch(e){
+    console.error('restore failed',e);
+    prog.textContent='✗ 復元に失敗しました（ファイルを確認してください）';
+  }
+  document.getElementById('restore-file').value='';
+}
+
+const KEY='tj_v3';
+const SYM_KEY='tj_symbols';
+const DEFAULT_SYMS=['NASDAQ / MNQ','USDJPY','XAUUSD','GBPUSD','Other'];
+
+function loadSyms(){try{return JSON.parse(localStorage.getItem(SYM_KEY))||[...DEFAULT_SYMS];}catch{return[...DEFAULT_SYMS];}}
+function saveSyms(s){localStorage.setItem(SYM_KEY,JSON.stringify(s));}
+function renderSymSelect(){
+  const syms=loadSyms();
+  const sel=document.getElementById('fs');
+  const cur=sel.value;
+  sel.innerHTML=syms.map(s=>`<option>${s}</option>`).join('');
+  if(cur&&syms.includes(cur))sel.value=cur;
+}
+function renderSymList(){
+  const syms=loadSyms();
+  document.getElementById('sym-list').innerHTML=syms.map((s,i)=>
+    `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--s1);border:1px solid var(--border);margin-bottom:4px;">
+      <span style="flex:1;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);">${s}</span>
+      <button onclick="editSym(${i})" style="background:none;border:1px solid var(--dim);color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;cursor:pointer;letter-spacing:1px;">編集</button>
+      <button onclick="delSym(${i})" style="background:none;border:1px solid var(--loss);color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;cursor:pointer;letter-spacing:1px;">削除</button>
+    </div>`).join('');
+}
+function toggleSymEdit(){
+  const p=document.getElementById('sym-edit-panel');
+  const open=p.style.display==='none';
+  p.style.display=open?'block':'none';
+  if(open)renderSymList();
+}
+function addSym(){
+  const inp=document.getElementById('sym-new-input');
+  const val=inp.value.trim().toUpperCase();
+  if(!val)return;
+  const syms=loadSyms();
+  if(syms.includes(val)){alert('すでに登録されています');inp.value='';return;}
+  syms.push(val);
+  saveSyms(syms);
+  inp.value='';
+  renderSymSelect();
+  renderSymList();
+}
+function editSym(i){
+  const syms=loadSyms();
+  const val=prompt('銘柄名を編集',syms[i]);
+  if(!val||!val.trim())return;
+  const newVal=val.trim().toUpperCase();
+  if(syms.includes(newVal)&&syms[i]!==newVal){alert('すでに登録されています');return;}
+  syms[i]=newVal;
+  saveSyms(syms);
+  renderSymSelect();
+  renderSymList();
+}
+function delSym(i){
+  const syms=loadSyms();
+  if(syms.length<=1){alert('最低1つは必要です');return;}
+  if(!confirm(`「${syms[i]}」を削除しますか？`))return;
+  syms.splice(i,1);
+  saveSyms(syms);
+  renderSymSelect();
+  renderSymList();
+}
+
+const WCOND_KEY='tj_win_conds', LCOND_KEY='tj_loss_conds';
+const WC_DEFAULT=['蓄積あり（Sweep前にレンジ）','前足の質：実体>ヒゲ・長いヒゲなし','Sweep（流動性狩り）あり','包み足あり（Sweep後）','Sweep直後 × EMAクロスあり','有利な価格でエントリー（待てた）','BOS確定','EMA実体抜け','流動性後の反応が強い','ニュースなし','ボリュームあり','強いゾーンなし','20pips以上の余地','リテスト後エントリー'];
+const LC_DEFAULT=['ニュース中/前後','ボリューム弱い','強いゾーンが近い','利幅20pips未満','流動性後に否定','レンジ内','EMAヒゲ抜けのみ','BOS前エントリー','違和感→強行'];
+function loadConds(key, def){
+  try{ const v=JSON.parse(localStorage.getItem(key)); return Array.isArray(v)&&v.length?v:[...def]; }catch{ return [...def]; }
+}
+function saveConds(){
+  localStorage.setItem(WCOND_KEY, JSON.stringify(WC));
+  localStorage.setItem(LCOND_KEY, JSON.stringify(LC));
+}
+let WC = loadConds(WCOND_KEY, WC_DEFAULT);
+let LC = loadConds(LCOND_KEY, LC_DEFAULT);
+
+// ---- カテゴリー編集（追加・改名・削除） ----
+function condArr(type){ return type==='win'?WC:LC; }
+function toggleCondEdit(type){
+  const p=document.getElementById(type+'-cond-edit-panel');
+  const show=p.style.display==='none';
+  p.style.display=show?'block':'none';
+  if(show) renderCondEditPanel(type);
+}
+function renderCondEditPanel(type){
+  const p=document.getElementById(type+'-cond-edit-panel');
+  const arr=condArr(type);
+  p.innerHTML=`
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <input type="text" id="${type}-cond-new" placeholder="新しいカテゴリー名" style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;padding:11px 12px;outline:none;">
+      <button onclick="addCond('${type}')" style="background:var(--neutral);border:none;color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;padding:11px 20px;cursor:pointer;">追加</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;max-height:300px;overflow-y:auto;">
+      ${arr.map((c,i)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg);border:1px solid var(--border);">
+          <span style="flex:1;font-size:13px;color:var(--text);">${esc(c)}</span>
+          <button onclick="renameCond('${type}',${i})" style="background:none;border:1px solid var(--border);color:var(--neutral);font-size:13px;padding:7px 14px;cursor:pointer;" title="改名">✎</button>
+          <button onclick="deleteCond('${type}',${i})" style="background:none;border:1px solid var(--border);color:var(--loss);font-size:13px;padding:7px 14px;cursor:pointer;" title="削除">✕</button>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--dim);line-height:1.5;">改名すると過去記録のタグも一括で更新されます。削除しても過去記録のタグは残ります（分析には表示されなくなります）。</div>`;
+}
+function refreshCondUI(type){
+  const cls=type==='win'?'wc':'lc';
+  const gridId=type==='win'?'wcg':'lcg';
+  const checked=[...document.querySelectorAll(`#${gridId} .ci.checked`)].map(e=>e.dataset.val);
+  BG(gridId, condArr(type), cls);
+  checked.forEach(v=>{
+    const el=document.querySelector(`#${gridId} [data-val="${CSS.escape(v)}"]`);
+    if(el) el.classList.add('checked');
+  });
+  renderCondEditPanel(type);
+  renderPromptText();
+}
+function addCond(type){
+  const inp=document.getElementById(type+'-cond-new');
+  const v=inp.value.trim();
+  if(!v) return;
+  const arr=condArr(type);
+  if(arr.includes(v)){ alert('同名のカテゴリーが既にあります'); return; }
+  arr.push(v);
+  saveConds();
+  inp.value='';
+  refreshCondUI(type);
+}
+function renameCond(type, idx){
+  const arr=condArr(type);
+  const oldName=arr[idx];
+  const next=prompt('カテゴリー名を編集:', oldName);
+  if(next===null) return;
+  const v=next.trim();
+  if(!v || v===oldName) return;
+  if(arr.includes(v)){ alert('同名のカテゴリーが既にあります'); return; }
+  arr[idx]=v;
+  saveConds();
+  const data=LD();
+  let touched=0;
+  data.forEach(r=>{
+    if(r.conditions&&r.conditions.includes(oldName)){
+      r.conditions=r.conditions.map(c=>c===oldName?v:c);
+      touched++;
+    }
+  });
+  if(touched){ SD(data); }
+  refreshCondUI(type);
+  if(touched) alert(`${touched}件の過去記録のタグも更新しました`);
+}
+function deleteCond(type, idx){
+  const arr=condArr(type);
+  const name=arr[idx];
+  const data=LD();
+  const used=data.filter(r=>r.conditions&&r.conditions.includes(name)).length;
+  if(!confirm(`「${name}」を削除しますか？${used?`\n（${used}件の過去記録で使用中 — タグは記録に残りますが分析には表示されなくなります）`:''}`)) return;
+  arr.splice(idx,1);
+  saveConds();
+  refreshCondUI(type);
+}
+
+function renderPromptText(){
+  const el=document.getElementById('prompt-text');
+  if(!el) return;
+  el.textContent=`以下のトレード結果を読み取り、JSON形式のみで出力してください。他の文章は一切不要です。
+
+出力形式：
+{
+  "date": "YYYY-MM-DDTHH:MM",
+  "symbol": "NASDAQ / MNQ",
+  "result": "win または loss",
+  "pips": 数値,
+  "usd": 数値（絶対値）,
+  "sl": 数値またはnull,
+  "rr": 数値またはnull,
+  "dir": "Buy（ロング） または Sell（ショート）",
+  "bias5": "一致 または 不一致 または 中立",
+  "bias15": "一致 または 不一致 または 中立",
+  "ema50": "✅ 確定後エントリー または ⚡ 途中でエントリー",
+  "conditions": ["該当する条件を配列で"],
+  "memo": "気づき・根拠など"
+}
+
+勝ちパターン条件（conditionsに含められるもの）:
+${WC.join(', ')}
+
+負けパターン条件（conditionsに含められるもの）:
+${LC.join(', ')}`;
+}
+let CR='win',CF='all',pendingImgs=[];
+
+function calcRR(){
+  const p=parseFloat(document.getElementById('fp').value);
+  const sl=parseFloat(document.getElementById('fsl').value);
+  const el=document.getElementById('rr-display');
+  if(p&&sl&&sl>0){
+    const rr=(p/sl).toFixed(2);
+    el.textContent=rr+'R';
+    el.style.color=parseFloat(rr)>=2?'var(--win)':parseFloat(rr)>=1?'var(--gold)':'var(--loss)';
+  } else {
+    el.textContent='—';
+    el.style.color='var(--neutral)';
+  }
+}
+
+(function(){
+  const n=new Date();n.setMinutes(n.getMinutes()-n.getTimezoneOffset());
+  document.getElementById('fd').value=n.toISOString().slice(0,16);
+  renderSymSelect();
+  BG('wcg',WC,'wc');BG('lcg',LC,'lc');
+  renderPromptText();
+})();
+
+function BG(id,items,cls){
+  document.getElementById(id).innerHTML=items.map(c=>`<div class="ci ${cls}" onclick="this.classList.toggle('checked')" data-val="${esc(c)}"><div class="cd"></div>${esc(c)}</div>`).join('');
+}
+
+function SR(r){
+  CR=r;
+  document.getElementById('bw').classList.toggle('active',r==='win');
+  document.getElementById('bl').classList.toggle('active',r==='loss');
+  document.getElementById('wcs').style.display=r==='win'?'block':'none';
+  document.getElementById('lcs').style.display=r==='loss'?'block':'none';
+  const b=document.getElementById('sbtn');
+  b.textContent=r==='win'?'WIN を記録する':'LOSS を記録する';
+  b.className='sbtn '+(r==='win'?'wb':'lb');
+}
+
+// Image
+
+// ---- Image compression ----
+function compressImg(dataUrl, maxW, maxH, quality, callback){
+  const img = new Image();
+  img.onload = function(){
+    let w = img.width, h = img.height;
+    if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+    if(h > maxH){ w = Math.round(w * maxH / h); h = maxH; }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+function addImgs(){
+  const files=[...document.getElementById('fimg').files];
+  if(!files.length)return;
+  processNextImg(files, 0);
+}
+function processNextImg(files, idx){
+  if(idx >= files.length){
+    document.getElementById('fimg').value='';
+    return;
+  }
+  const file = files[idx];
+  const reader = new FileReader();
+  reader.onload = e => {
+    openAdj(e.target.result, result=>{
+      pendingImgs.push(result);
+      renderImgsPreview();
+      processNextImg(files, idx+1);
+    });
+  };
+  reader.readAsDataURL(file);
+}
+function renderImgsPreview(){
+  const grid = document.getElementById('imgs-preview-grid');
+  grid.innerHTML = pendingImgs.map((src,i)=>`
+    <div style="position:relative;">
+      <img src="${src}" style="width:100%;height:90px;object-fit:cover;border:1px solid var(--border);cursor:pointer;" onclick="LB('${src.replace(/'/g,"\\'")}','記録中のチャート')">
+      <button onclick="event.stopPropagation();rmPendingImg(${i})" style="position:absolute;top:4px;right:4px;background:rgba(7,9,12,0.85);border:1px solid var(--loss);color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 6px;cursor:pointer;">✕</button>
+    </div>`).join('');
+  document.getElementById('uicon').style.display = pendingImgs.length ? 'none' : '';
+  document.getElementById('utxt').style.display = pendingImgs.length ? 'none' : '';
+}
+function rmPendingImg(i){
+  pendingImgs.splice(i,1);
+  renderImgsPreview();
+}
+function rmImg(){
+  pendingImgs=[];
+  renderImgsPreview();
+  document.getElementById('fimg').value='';
+}
+
+// Lightbox
+let lbScale=1,lbX=0,lbY=0,lbDragging=false,lbDragX=0,lbDragY=0;
+let cropMode=false,cropStartX=0,cropStartY=0,cropping=false;
+
+function LB(src,label){
+  if(!src)return;
+  const img=document.getElementById('lb-img');
+  img.src=src;
+  lbReset();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+  setupLBEvents();
+  // hide multi-image nav for single image
+  const prevEl=document.getElementById('lb-prev');
+  const nextEl=document.getElementById('lb-next');
+  const counterEl=document.getElementById('lb-counter');
+  const stripEl=document.getElementById('lb-thumb-strip');
+  if(prevEl)prevEl.classList.remove('show');
+  if(nextEl)nextEl.classList.remove('show');
+  if(counterEl)counterEl.classList.remove('show');
+  if(stripEl)stripEl.classList.remove('show');
+}
+function CLB(){
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow='';
+  cropMode=false;
+  document.getElementById('crop-overlay').style.display='none';
+  document.getElementById('crop-btn').classList.remove('active');
+}
+function lbZoom(factor){
+  lbScale=Math.min(Math.max(lbScale*factor,0.2),8);
+  applyLBTransform();
+}
+function lbReset(){
+  lbScale=1;lbX=0;lbY=0;
+  applyLBTransform();
+}
+function applyLBTransform(){
+  const img=document.getElementById('lb-img');
+  img.style.transform=`translate(${lbX}px,${lbY}px) scale(${lbScale})`;
+}
+function toggleCrop(){
+  cropMode=!cropMode;
+  const btn=document.getElementById('crop-btn');
+  const overlay=document.getElementById('crop-overlay');
+  const hint=document.getElementById('lb-hint');
+  if(cropMode){
+    btn.classList.add('active');
+    hint.textContent='ドラッグで範囲を選択 → 決定ボタンで保存';
+    document.getElementById('lb-img').style.cursor='crosshair';
+  } else {
+    btn.classList.remove('active');
+    overlay.style.display='none';
+    hint.textContent='ドラッグで移動 / スクロールで拡大縮小';
+    document.getElementById('lb-img').style.cursor='grab';
+  }
+}
+function setupLBEvents(){
+  const img=document.getElementById('lb-img');
+  const wrap=document.getElementById('lb-wrap');
+  const overlay=document.getElementById('crop-overlay');
+
+  // Wheel zoom
+  wrap.onwheel=e=>{
+    e.preventDefault();
+    lbZoom(e.deltaY<0?1.1:0.9);
+  };
+
+  // Drag to pan
+  img.onmousedown=e=>{
+    if(cropMode) return;
+    lbDragging=true;
+    lbDragX=e.clientX-lbX;
+    lbDragY=e.clientY-lbY;
+    img.style.cursor='grabbing';
+    e.preventDefault();
+  };
+  document.onmousemove=e=>{
+    if(lbDragging&&!cropMode){
+      lbX=e.clientX-lbDragX;
+      lbY=e.clientY-lbDragY;
+      applyLBTransform();
+    }
+    if(croppping&&cropMode){
+      const rect=wrap.getBoundingClientRect();
+      const x=Math.min(e.clientX-rect.left,cropStartX);
+      const y=Math.min(e.clientY-rect.top,cropStartY);
+      const w=Math.abs(e.clientX-rect.left-cropStartX);
+      const h=Math.abs(e.clientY-rect.top-cropStartY);
+      overlay.style.left=x+'px';
+      overlay.style.top=y+'px';
+      overlay.style.width=w+'px';
+      overlay.style.height=h+'px';
+    }
+  };
+  document.onmouseup=e=>{
+    if(lbDragging){lbDragging=false;img.style.cursor=cropMode?'crosshair':'grab';}
+    if(croppping&&cropMode){
+      croppping=false;
+      // Show save crop button
+      const rect=wrap.getBoundingClientRect();
+      const ox=parseFloat(overlay.style.left);
+      const oy=parseFloat(overlay.style.top);
+      const ow=parseFloat(overlay.style.width);
+      const oh=parseFloat(overlay.style.height);
+      if(ow>10&&oh>10){
+        saveCrop(ox-rect.left+wrap.scrollLeft,oy-rect.top+wrap.scrollTop,ow,oh,wrap.offsetWidth,wrap.offsetHeight);
+      }
+    }
+  };
+
+  // Crop drag
+  wrap.onmousedown=e=>{
+    if(!cropMode) return;
+    const rect=wrap.getBoundingClientRect();
+    cropStartX=e.clientX-rect.left;
+    cropStartY=e.clientY-rect.top;
+    croppping=true;
+    overlay.style.left=cropStartX+'px';
+    overlay.style.top=cropStartY+'px';
+    overlay.style.width='0';
+    overlay.style.height='0';
+    overlay.style.display='block';
+    e.preventDefault();
+  };
+
+  // Touch support
+  let lastDist=0;
+  wrap.ontouchstart=e=>{
+    if(e.touches.length===2){
+      lastDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    } else if(e.touches.length===1&&!cropMode){
+      lbDragging=true;
+      lbDragX=e.touches[0].clientX-lbX;
+      lbDragY=e.touches[0].clientY-lbY;
+    }
+  };
+  wrap.ontouchmove=e=>{
+    e.preventDefault();
+    if(e.touches.length===2){
+      const dist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      if(lastDist>0) lbZoom(dist/lastDist);
+      lastDist=dist;
+    } else if(e.touches.length===1&&lbDragging&&!cropMode){
+      lbX=e.touches[0].clientX-lbDragX;
+      lbY=e.touches[0].clientY-lbDragY;
+      applyLBTransform();
+    }
+  };
+  wrap.ontouchend=e=>{lbDragging=false;lastDist=0;};
+}
+
+function saveCrop(ox,oy,ow,oh,ww,wh){
+  const img=document.getElementById('lb-img');
+  const iw=img.naturalWidth,ih=img.naturalHeight;
+  const scaleX=iw/(ww/lbScale);
+  const scaleY=ih/(wh/lbScale);
+  const cx=(ox/lbScale)*scaleX;
+  const cy=(oy/lbScale)*scaleY;
+  const cw=(ow/lbScale)*scaleX;
+  const ch=(oh/lbScale)*scaleY;
+  const canvas=document.createElement('canvas');
+  canvas.width=cw;canvas.height=ch;
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(img,cx,cy,cw,ch,0,0,cw,ch);
+  const url=canvas.toDataURL('image/jpeg',0.92);
+  const a=document.createElement('a');
+  a.href=url;a.download='chart_crop.jpg';a.click();
+  document.getElementById('crop-overlay').style.display='none';
+  toggleCrop();
+}
+
+let croppping=false;
+document.addEventListener('keydown',e=>{if(e.key==='Escape')CLB();});
+
+// Storage
+function LD(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch{return[];}}
+function SD(d){localStorage.setItem(KEY,JSON.stringify(d));}
+
+function save(){
+  const p=parseFloat(document.getElementById('fp').value);
+  const u=parseFloat(document.getElementById('fu').value);
+  if(!p||!u){alert('pipsと$を入力してください');return;}
+  const s=CR==='win'?'.wc.checked':'.lc.checked';
+  const c=[...document.querySelectorAll(s)].map(e=>e.dataset.val);
+  const sl=parseFloat(document.getElementById('fsl').value)||null;
+  const rr=(p&&sl)?parseFloat((p/sl).toFixed(2)):null;
+  const rec={
+    id:Date.now(),
+    date:document.getElementById('fd').value,
+    symbol:document.getElementById('fs').value,
+    result:CR,pips:p,usd:u,sl,rr,
+    dir:document.getElementById('fdr').value,
+    bias5:document.getElementById('fb5').value,
+    bias15:document.getElementById('fb15').value,
+    ema50:document.getElementById('fema').value,
+    conditions:c,
+    memo:document.getElementById('fm').value.trim(),
+    imgCount: pendingImgs.length
+  };
+  const imgsToSave = [...pendingImgs];
+  const d=LD();d.unshift(rec);SD(d);
+  if(imgsToSave.length) saveImgs(rec.id, imgsToSave);
+  // reset
+  document.getElementById('fp').value='';
+  document.getElementById('fu').value='';
+  document.getElementById('fsl').value='';
+  document.getElementById('fb5').value='一致';
+  document.getElementById('fb15').value='一致';
+  document.getElementById('fema').value='Yes';
+  document.getElementById('rr-display').textContent='—';
+  document.getElementById('rr-display').style.color='var(--neutral)';
+  document.getElementById('fm').value='';
+  document.querySelectorAll('.ci').forEach(e=>e.classList.remove('checked'));
+  rmImg();
+  T(CR);
+}
+
+function T(type){
+  const t=document.getElementById('toast');
+  t.textContent=type==='win'?'▲ WIN 記録しました':'▼ LOSS 記録しました';
+  t.className='toast '+(type==='win'?'wt':'lt');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function V(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const idx=['record','analysis','list','ai'].indexOf(v);
+  if(idx>=0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if(v==='analysis')RA();
+  if(v==='list')RL();
+}
+
+// ANALYSIS
+function RA(){
+  const data=LD();
+  if(!data.length){
+    document.getElementById('asub').textContent='記録なし';
+    document.getElementById('ibox').style.display='none';
+    ['awr','anet','aavgw','aavgl','apro','alos','awp','alp','acnt'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('awl').textContent='0勝 0敗';
+    document.getElementById('wrbar').style.width='0%';
+    document.getElementById('wbars').innerHTML='';
+    document.getElementById('lbars').innerHTML='';
+    return;
+  }
+  const W=data.filter(r=>r.result==='win');
+  const L=data.filter(r=>r.result==='loss');
+  const wr=Math.round(W.length/data.length*100);
+  const tp=W.reduce((s,r)=>s+r.usd,0);
+  const tl=L.reduce((s,r)=>s+r.usd,0);
+  const net=tp-tl;
+  const avgW=W.length?Math.round(tp/W.length):0;
+  const avgL=L.length?Math.round(tl/L.length):0;
+  const wp=W.reduce((s,r)=>s+r.pips,0);
+  const lp=L.reduce((s,r)=>s+r.pips,0);
+
+  document.getElementById('asub').textContent=`${data.length}件 / ${W.length}勝 ${L.length}敗`;
+  document.getElementById('awl').textContent=`${W.length}勝 ${L.length}敗`;
+  const we=document.getElementById('awr');
+  we.textContent=wr+'%';
+  we.style.color=wr>=50?'var(--win)':wr>=40?'var(--gold)':'var(--loss)';
+  const ne=document.getElementById('anet');
+  ne.textContent=(net>=0?'+':'-')+'\$'+Math.abs(net).toLocaleString();
+  ne.style.color=net>=0?'var(--win)':'var(--loss)';
+  document.getElementById('anets').textContent=net>=0?'利益超過':'損失超過';
+  document.getElementById('aavgw').textContent='\$'+avgW;
+  document.getElementById('aavgl').textContent='\$'+avgL;
+  document.getElementById('apro').textContent='+\$'+tp.toLocaleString();
+  document.getElementById('alos').textContent='-\$'+tl.toLocaleString();
+  document.getElementById('awp').textContent='+'+wp+'p';
+  document.getElementById('alp').textContent='-'+lp+'p';
+  document.getElementById('acnt').textContent=data.length+'件';
+  document.getElementById('wrbar').style.width=wr+'%';
+  document.getElementById('wbrl').textContent='WIN '+wr+'%';
+  document.getElementById('wbrr').textContent='LOSS '+(100-wr)+'%';
+
+  const ins=[];
+  if(W.length>0){
+    const wc={};WC.forEach(c=>{wc[c]=W.filter(r=>r.conditions&&r.conditions.includes(c)).length;});
+    const top=Object.entries(wc).sort((a,b)=>b[1]-a[1])[0];
+    if(top[1]>0)ins.push(`「${top[0]}」が揃った時に最も勝ちやすい（${top[1]}/${W.length}勝）`);
+  }
+  if(L.length>0){
+    const lc={};LC.forEach(c=>{lc[c]=L.filter(r=>r.conditions&&r.conditions.includes(c)).length;});
+    const top=Object.entries(lc).sort((a,b)=>b[1]-a[1])[0];
+    if(top[1]>0)ins.push(`最も多い負け原因は「${top[0]}」（${top[1]}/${L.length}敗）`);
+    const bl=data.filter(r=>r.result==='loss'&&r.bias==='不一致').length;
+    if(bl>0){const pct=Math.round(bl/L.length*100);if(pct>=30)ins.push(`負けの${pct}%がバイアス不一致 — ここを塞ぐだけで大幅改善`);}
+  }
+  if(avgW>0&&avgL>0){const rr=(avgW/avgL).toFixed(2);ins.push(`平均RR = ${rr}R（${parseFloat(rr)>=1.5?'良好':'改善余地あり'}）`);}
+  if(wr>0)ins.push(wr>=50?`勝率${wr}% — セットアップ精度は機能している`:`勝率${wr}% — セットアップ選別の強化が最優先`);
+
+  const box=document.getElementById('ibox');
+  if(ins.length){box.style.display='block';document.getElementById('iitems').innerHTML=ins.map(i=>`<div class="iitem">${i}</div>`).join('');}
+
+  // bias analysis
+  const biasSec=document.getElementById('bias-analysis');
+  if(biasSec){
+    const w5=W.filter(r=>r.bias5==='一致').length;
+    const w15=W.filter(r=>r.bias15==='一致').length;
+    const l5=L.filter(r=>r.bias5==='一致').length;
+    const l15=L.filter(r=>r.bias15==='一致').length;
+    const wn=W.length||1;const ln=L.length||1;
+    biasSec.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:5px;">5分足一致 × WIN</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(w5/wn*100)}%;background:var(--win);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);">${w5}/${wn} (${Math.round(w5/wn*100)}%)</div></div>
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:5px;">15分足一致 × WIN</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(w15/wn*100)}%;background:var(--win);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);">${w15}/${wn} (${Math.round(w15/wn*100)}%)</div></div>
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:5px;">5分足一致 × LOSS</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(l5/ln*100)}%;background:var(--loss);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--loss);">${l5}/${ln} (${Math.round(l5/ln*100)}%)</div></div>
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:5px;">15分足一致 × LOSS</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(l15/ln*100)}%;background:var(--loss);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--loss);">${l15}/${ln} (${Math.round(l15/ln*100)}%)</div></div>
+    </div>`;
+  }
+  // EMA50 win rate
+  const biasSec2 = document.getElementById('bias-analysis');
+  if(biasSec2){
+    const w5=W.filter(r=>r.bias5==='一致').length;
+    const w15=W.filter(r=>r.bias15==='一致').length;
+    const wema=W.filter(r=>r.ema50==='Yes').length;
+    const lema=L.filter(r=>r.ema50==='Yes').length;
+    const wn=W.length||1;const ln=L.length||1;const tn=data.length||1;
+    const emaYes=data.filter(r=>r.ema50==='Yes').length;
+    const emaWin=W.filter(r=>r.ema50==='Yes').length;
+    const emaWR=emaYes?Math.round(emaWin/emaYes*100):0;
+    const emaNo=data.filter(r=>r.ema50==='No').length;
+    const emaNoWin=W.filter(r=>r.ema50==='No').length;
+    const emaNoWR=emaNo?Math.round(emaNoWin/emaNo*100):0;
+    biasSec2.innerHTML=`
+    <div style="margin-bottom:14px;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--gold);margin-bottom:8px;">50EMA実体確定 × 勝率</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="background:var(--bg);border:1px solid rgba(0,217,126,0.3);padding:12px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--win);margin-bottom:4px;">✅ 確定後エントリー</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--win);">${emaWR}%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);">${emaWin}勝 / ${emaYes}件</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid rgba(255,61,90,0.3);padding:12px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--loss);margin-bottom:4px;">⚡ 途中エントリー</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--loss);">${emaNoWR}%</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);">${emaNoWin}勝 / ${emaNo}件</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--gold);margin-bottom:8px;">上位足バイアス一致率</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:4px;">5分足一致 × WIN</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(w5/wn*100)}%;background:var(--win);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);">${w5}/${wn} (${Math.round(w5/wn*100)}%)</div></div>
+      <div><div style="font-size:11px;color:var(--dim);margin-bottom:4px;">15分足一致 × WIN</div>
+        <div style="height:4px;background:var(--dim2);margin-bottom:3px;"><div style="height:100%;width:${Math.round(w15/wn*100)}%;background:var(--win);"></div></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--win);">${w15}/${wn} (${Math.round(w15/wn*100)}%)</div></div>
+    </div>`;
+  }
+  const wb=document.getElementById('wbars'),lb2=document.getElementById('lbars');
+  wb.innerHTML='';lb2.innerHTML='';
+  WC.forEach(c=>{
+    const cnt=W.filter(r=>r.conditions&&r.conditions.includes(c)).length;
+    const pct=W.length?Math.round(cnt/W.length*100):0;
+    wb.innerHTML+=BR(c,cnt,pct,'wf',W.length);
+  });
+  LC.forEach(c=>{
+    const cnt=L.filter(r=>r.conditions&&r.conditions.includes(c)).length;
+    const pct=L.length?Math.round(cnt/L.length*100):0;
+    lb2.innerHTML+=BR(c,cnt,pct,'lf',L.length);
+  });
+}
+
+function BR(label,cnt,pct,cls,total){
+  return `<div class="cbr"><div class="cbrt"><span class="cbrl">${label}</span><span class="cbrs">${cnt}/${total} (${pct}%)</span></div><div class="cbrk"><div class="cbrf ${cls}" style="width:${pct}%"></div></div></div>`;
+}
+
+// LIST
+function SF(f,btn){
+  CF=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  RL();
+}
+
+function RL(){
+  const data=LD().filter(r=>CF==='all'||r.result===CF);
+  const list=document.getElementById('tlist');
+  if(!data.length){list.innerHTML='<div class="empty">記録がありません</div>';return;}
+  // load first thumbnail from IDB after render
+  setTimeout(()=>{
+    data.forEach(r=>{
+      // imgCountがない旧データも含めてサムネ試行
+      const cnt=r.imgCount!=null?r.imgCount:1;
+      if(cnt>0){
+        loadImg(`${r.id}_0`).then(src=>{
+          if(!src){
+            // 旧形式キー（recordId単体）も試す
+            loadImg(String(r.id)).then(src2=>{
+              if(!src2) return;
+              const t=document.getElementById('thumb-'+r.id);
+              if(t) t.src=src2;
+            });
+            return;
+          }
+          const t=document.getElementById('thumb-'+r.id);
+          if(t) t.src=src;
+        });
+      }
+    });
+  }, 50);
+  list.innerHTML=data.map(r=>{
+    const color=r.result==='win'?'var(--win)':'var(--loss)';
+    const sign=r.result==='win'?'+':'-';
+    const d=r.date?new Date(r.date).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+    const condTags=(r.conditions||[]).map(c=>`<span class="tdtag ${r.result==='win'?'wt':'lt'}">${c}</span>`).join('');
+    const rrText=r.rr?r.rr+'R':'—';
+    // imgCountがない旧データは「不明 = 画像あるかも」として表示
+    const imgCount=r.imgCount!=null?r.imgCount:null;
+    const showThumb=imgCount===null||imgCount>0;
+    const thumbHtml=showThumb
+      ?`<div style="position:relative;flex-shrink:0;"><img id="thumb-${r.id}" src="" style="width:26px;height:26px;object-fit:cover;border:1px solid var(--border);cursor:pointer;">${imgCount>1?`<span style="position:absolute;bottom:-3px;right:-3px;background:var(--neutral);color:#fff;font-family:'Share Tech Mono',monospace;font-size:7px;padding:0 3px;line-height:1.3;">${imgCount}</span>`:''}</div>`
+      :'<div style="width:26px;"></div>';
+    const chartLabel=imgCount!=null?`チャート（${imgCount}枚）`:'チャート';
+    const chartInit=imgCount===0?'<div class="det-no-img">NO IMAGE</div>':'<div style="font-size:10px;color:var(--dim);">タップして表示</div>';
+    return `<div class="tc" style="--tcc:${color}" onclick="TD(${r.id})">
+      <div class="tcm">
+        <div class="tcd">${d}<br>${r.symbol}</div>
+        <div class="tcr ${r.result}">${sign}${r.pips}p</div>
+        <div class="tcu">${sign}\$${r.usd}</div>
+        <div class="tcrr">${rrText}</div>
+        <div class="tcmm">${esc(r.memo)||'（メモなし）'}</div>
+        ${thumbHtml}
+        <button class="tcdl" style="color:var(--neutral);margin-right:2px;" onclick="event.stopPropagation();openEdit(${r.id})" title="編集">✎</button>
+        <button class="tcdl" onclick="event.stopPropagation();DEL(${r.id})" title="削除">✕</button>
+      </div>
+      <div class="tdet" id="td-${r.id}">
+        <div class="tdet-inner">
+          <div class="tdet-left">
+            <div style="display:flex;gap:8px;margin-bottom:10px;">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 10px;border:1px solid ${r.bias5==='一致'?'rgba(0,217,126,0.4)':r.bias5==='不一致'?'rgba(255,61,90,0.4)':'rgba(61,158,232,0.4)'};color:${r.bias5==='一致'?'var(--win)':r.bias5==='不一致'?'var(--loss)':'var(--neutral)'};">5分: ${r.bias5||'—'}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 10px;border:1px solid ${r.bias15==='一致'?'rgba(0,217,126,0.4)':r.bias15==='不一致'?'rgba(255,61,90,0.4)':'rgba(61,158,232,0.4)'};color:${r.bias15==='一致'?'var(--win)':r.bias15==='不一致'?'var(--loss)':'var(--neutral)'};">15分: ${r.bias15||'—'}</span>
+            </div>
+            <div class="tdl">${r.result==='win'?'達成条件':'負け原因'}</div>
+            <div class="tdt">${condTags||'<span style="font-size:11px;color:var(--dim)">記録なし</span>'}</div>
+            ${r.memo?`<div class="tdl" style="margin-top:8px">メモ</div><div class="tdmt">${esc(r.memo)}</div>`:''}
+          </div>
+          <div class="tdet-right">
+            <div class="tdl">${chartLabel}</div>
+            <div id="chart-grid-${r.id}">${chartInit}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function TD(id){
+  const el=document.getElementById('td-'+id);
+  if(el){
+    el.classList.toggle('open');
+    if(el.classList.contains('open')){
+      const grid=document.getElementById('chart-grid-'+id);
+      if(grid && !grid.dataset.loaded){
+        const data=LD();
+        const rec=data.find(x=>x.id===id);
+        let cnt=rec&&rec.imgCount!=null?rec.imgCount:null;
+        // imgCount未定義の旧データ: IDBを直接探索して枚数を確定する
+        if(cnt===null){
+          const found=[];
+          for(let i=0;i<20;i++){
+            const img=await loadImg(`${id}_${i}`);
+            if(!img) break;
+            found.push(img);
+          }
+          // 旧形式（キーがrecordId単体）もチェック
+          if(!found.length){
+            const single=await loadImg(String(id));
+            if(single) found.push(single);
+          }
+          if(found.length){
+            // レコードのimgCountを更新して保存
+            if(rec){ rec.imgCount=found.length; SD(data); }
+            grid.dataset.loaded='1';
+            grid.dataset.imgs=JSON.stringify(found);
+            grid.innerHTML=`<div style="position:relative;display:inline-block;width:100%;">
+              <img class="det-chart" src="${found[0]}" onclick='openGridLB(${id}, 0)'>
+              ${found.length>1?`<span style="position:absolute;bottom:6px;right:6px;background:rgba(7,9,12,0.85);border:1px solid var(--neutral);color:var(--neutral);font-family:'Share Tech Mono',monospace;font-size:10px;padding:2px 8px;">📷 ${found.length}枚</span>`:''}
+            </div>`;
+          } else {
+            grid.dataset.loaded='1';
+            grid.innerHTML='<div class="det-no-img">NO IMAGE</div>';
+          }
+          return;
+        }
+        if(cnt>0){
+          loadImgs(id, cnt).then(imgs=>{
+            grid.dataset.loaded='1';
+            grid.dataset.imgs=JSON.stringify(imgs);
+            if(imgs.length){
+              grid.innerHTML=`<div style="position:relative;display:inline-block;width:100%;">
+                <img class="det-chart" src="${imgs[0]}" onclick='openGridLB(${id}, 0)'>
+                ${imgs.length>1?`<span style="position:absolute;bottom:6px;right:6px;background:rgba(7,9,12,0.85);border:1px solid var(--neutral);color:var(--neutral);font-family:'Share Tech Mono',monospace;font-size:10px;padding:2px 8px;">📷 ${imgs.length}枚</span>`:''}
+              </div>`;
+              if(imgs.length<cnt){
+                grid.innerHTML+=`<div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--loss);">⚠ ${cnt}枚中${imgs.length}枚のみ読込できました</div>`;
+              }
+            } else {
+              grid.innerHTML='<div class="det-no-img">NO IMAGE</div>';
+            }
+          });
+        } else {
+          grid.innerHTML='<div class="det-no-img">NO IMAGE</div>';
+        }
+      }
+    }
+  }
+}
+function openGridLB(rid, idx){
+  const grid=document.getElementById('chart-grid-'+rid);
+  if(!grid || !grid.dataset.imgs) return;
+  const imgs = JSON.parse(grid.dataset.imgs);
+  LBM(imgs, idx, '');
+}
+function DEL(id){
+  const data=LD();
+  const rec=data.find(r=>r.id===id);
+  if(rec) deleteImgs(id, rec.imgCount||0);
+  SD(data.filter(r=>r.id!==id));RL();
+}
+function CA(){if(!confirm('全記録を削除しますか？'))return;SD([]);RL();}
+
+let editId=null;
+let editResult='win';
+let editExistingImgs=[];  // images already saved (loaded from IDB)
+let editNewImgs=[];       // newly added images (not yet saved)
+let editRemovedIdx=[];    // indices of existing images marked for removal
+let editImgsLoading=false; // true while existing images are being loaded from IDB
+
+function editAddImgs(){
+  const files=[...document.getElementById('e-img-file').files];
+  if(!files.length)return;
+  editProcessNext(files,0);
+}
+function editProcessNext(files,idx){
+  if(idx>=files.length){
+    document.getElementById('e-img-file').value='';
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    openAdj(e.target.result, result=>{
+      editNewImgs.push(result);
+      renderEditImgsGrid();
+      editProcessNext(files, idx+1);
+    });
+  };
+  reader.readAsDataURL(files[idx]);
+}
+function renderEditImgsGrid(){
+  const grid=document.getElementById('e-imgs-grid');
+  let html='';
+  editExistingImgs.forEach((src,i)=>{
+    if(editRemovedIdx.includes(i)) return;
+    html+=`<div style="position:relative;">
+      <img src="${src}" style="width:100%;height:90px;object-fit:cover;border:1px solid var(--border);cursor:pointer;" onclick="LB('${src.replace(/'/g,"\\'")}','編集中のチャート')">
+      <button onclick="event.stopPropagation();editRemoveExisting(${i})" style="position:absolute;top:4px;right:4px;background:rgba(7,9,12,0.85);border:1px solid var(--loss);color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 6px;cursor:pointer;">✕</button>
+    </div>`;
+  });
+  editNewImgs.forEach((src,i)=>{
+    html+=`<div style="position:relative;">
+      <img src="${src}" style="width:100%;height:90px;object-fit:cover;border:1px solid var(--win);cursor:pointer;" onclick="LB('${src.replace(/'/g,"\\'")}','新規追加')">
+      <button onclick="event.stopPropagation();editRemoveNew(${i})" style="position:absolute;top:4px;right:4px;background:rgba(7,9,12,0.85);border:1px solid var(--loss);color:var(--loss);font-family:'Share Tech Mono',monospace;font-size:9px;padding:2px 6px;cursor:pointer;">✕</button>
+    </div>`;
+  });
+  grid.innerHTML=html;
+}
+function editRemoveExisting(i){
+  editRemovedIdx.push(i);
+  renderEditImgsGrid();
+}
+function editRemoveNew(i){
+  editNewImgs.splice(i,1);
+  renderEditImgsGrid();
+}
+function openEdit(id){
+  const data=LD();
+  const r=data.find(x=>x.id===id);
+  if(!r)return;
+  editId=id;
+  editResult=r.result;
+  // populate symbol select
+  const sel=document.getElementById('e-symbol');
+  const syms=loadSyms();
+  sel.innerHTML=syms.map(s=>`<option value="${s}">${s}</option>`).join('');
+  sel.value=r.symbol||syms[0];
+  // set fields
+  document.getElementById('e-date').value=r.date||'';
+  document.getElementById('e-pips').value=r.pips||'';
+  document.getElementById('e-usd').value=r.usd||'';
+  document.getElementById('e-sl').value=r.sl||'';
+  document.getElementById('e-dir').value=r.dir||'Buy（ロング）';
+  document.getElementById('e-bias5').value=r.bias5||'一致';
+  document.getElementById('e-bias15').value=r.bias15||'一致';
+  document.getElementById('e-ema50').value=r.ema50||'Yes';
+  document.getElementById('e-memo').value=r.memo||'';
+  // images
+  editExistingImgs=[];
+  editNewImgs=[];
+  editRemovedIdx=[];
+  document.getElementById('e-img-file').value='';
+  document.getElementById('e-imgs-grid').innerHTML='<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;color:var(--dim);">読込中...</div>';
+  editImgsLoading=true;
+  (async()=>{
+    let imgs=[];
+    const imgCnt=r.imgCount!=null?r.imgCount:null;
+    if(imgCnt===null){
+      // 旧データ: IDBを直接探索
+      for(let i=0;i<20;i++){
+        const img=await loadImg(`${id}_${i}`);
+        if(!img) break;
+        imgs.push(img);
+      }
+      if(!imgs.length){
+        const single=await loadImg(String(id));
+        if(single) imgs.push(single);
+      }
+    } else if(imgCnt>0){
+      imgs=await loadImgs(id, imgCnt);
+    }
+    editExistingImgs=imgs;
+    editImgsLoading=false;
+    renderEditImgsGrid();
+  })();
+  // result toggle
+  setEditResult(r.result);
+  // build condition grids
+  BG('e-wcg',WC,'ewc');
+  BG('e-lcg',LC,'elc');
+  // check existing conditions
+  (r.conditions||[]).forEach(c=>{
+    const el=document.querySelector(`#e-wcg [data-val="${c}"], #e-lcg [data-val="${c}"]`);
+    if(el)el.classList.add('checked');
+  });
+  calcEditRR();
+  document.getElementById('edit-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeEdit(){
+  document.getElementById('edit-modal').classList.remove('open');
+  document.body.style.overflow='';
+  editId=null;
+}
+
+function setEditResult(r){
+  editResult=r;
+  document.getElementById('ertb-win').classList.toggle('active',r==='win');
+  document.getElementById('ertb-loss').classList.toggle('active',r==='loss');
+  document.getElementById('e-wcs').style.display=r==='win'?'block':'none';
+  document.getElementById('e-lcs').style.display=r==='loss'?'block':'none';
+}
+
+function calcEditRR(){
+  const p=parseFloat(document.getElementById('e-pips').value);
+  const sl=parseFloat(document.getElementById('e-sl').value);
+  const el=document.getElementById('e-rr');
+  if(p&&sl&&sl>0){
+    const rr=(p/sl).toFixed(2);
+    el.textContent=rr+'R';
+    el.style.color=parseFloat(rr)>=2?'var(--win)':parseFloat(rr)>=1?'var(--gold)':'var(--loss)';
+  } else {
+    el.textContent='—';
+    el.style.color='var(--neutral)';
+  }
+}
+
+function saveEdit(){
+  if(!editId)return;
+  if(editImgsLoading){alert('既存画像を読み込み中です。1〜2秒待ってから保存してください');return;}
+  const p=parseFloat(document.getElementById('e-pips').value);
+  const u=parseFloat(document.getElementById('e-usd').value);
+  if(!p||!u){alert('pipsと$を入力してください');return;}
+  const sl=parseFloat(document.getElementById('e-sl').value)||null;
+  const rr=(p&&sl)?parseFloat((p/sl).toFixed(2)):null;
+  const condSel=editResult==='win'?'.ewc.checked':'.elc.checked';
+  const conds=[...document.querySelectorAll(condSel)].map(e=>e.dataset.val);
+  const data=LD();
+  const idx=data.findIndex(x=>x.id===editId);
+  if(idx===-1)return;
+  // Build final image list: existing (minus removed) + new
+  const finalImgs=[];
+  editExistingImgs.forEach((src,i)=>{ if(!editRemovedIdx.includes(i)) finalImgs.push(src); });
+  editNewImgs.forEach(src=>finalImgs.push(src));
+  const oldCount=data[idx].imgCount!=null?data[idx].imgCount:20; // 旧データは広めに削除
+  data[idx]={
+    ...data[idx],
+    date:document.getElementById('e-date').value,
+    symbol:document.getElementById('e-symbol').value,
+    result:editResult,
+    pips:p,usd:u,sl,rr,
+    dir:document.getElementById('e-dir').value,
+    bias5:document.getElementById('e-bias5').value,
+    bias15:document.getElementById('e-bias15').value,
+    ema50:document.getElementById('e-ema50').value,
+    conditions:conds,
+    memo:document.getElementById('e-memo').value.trim(),
+    imgCount:finalImgs.length
+  };
+  SD(data);
+  // re-save images under same record id (clear old, save new sequence)
+  const savedId = editId;
+  closeEdit();
+  (async ()=>{
+    await deleteImgs(savedId, oldCount);
+    await deleteImg(String(savedId)); // 旧形式キーも掃除
+    let savedCount=0;
+    for(let i=0;i<finalImgs.length;i++){
+      let ok=await saveImg(`${savedId}_${i}`, finalImgs[i]);
+      if(!ok){
+        console.warn(`saveImg retry: ${savedId}_${i}`);
+        ok=await saveImg(`${savedId}_${i}`, finalImgs[i]); // 1回リトライ
+      }
+      if(ok){ savedCount++; }
+      else { console.error(`saveImg failed after retry: ${savedId}_${i}`); break; }
+    }
+    const check = await loadImgs(savedId, finalImgs.length);
+    console.log(`Edit save: ${savedId}, expected ${finalImgs.length}, saved ${check.length}`);
+    // 実際に保存できた枚数とズレたら imgCount を実態に合わせて修正
+    if(check.length!==finalImgs.length){
+      const d2=LD();
+      const i2=d2.findIndex(x=>x.id===savedId);
+      if(i2!==-1){ d2[i2].imgCount=check.length; SD(d2); }
+      const t=document.getElementById('toast');
+      t.textContent=`⚠ 画像${finalImgs.length}枚中${check.length}枚のみ保存できました`;
+      t.className='toast lt';
+      t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),4000);
+    }
+    RL();
+  })();
+  const t=document.getElementById('toast');
+  t.textContent='✓ 更新しました';
+  t.className='toast wt';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ---- Image Adjuster ----
+let adjScale=1,adjX=0,adjY=0,adjDragging=false,adjDragX=0,adjDragY=0;
+let adjCallback=null;
+
+function openAdj(src, callback){
+  adjCallback=callback;
+  adjScale=1;adjX=0;adjY=0;
+  const img=document.getElementById('adj-img');
+  img.onload=()=>{ updateGuide(); };
+  img.src=src;
+  document.getElementById('img-adjuster').classList.add('open');
+  document.body.style.overflow='hidden';
+  setupAdjEvents();
+  setTimeout(updateGuide, 100);
+}
+function updateGuide(){
+  const wrap=document.getElementById('adj-wrap');
+  const guide=document.getElementById('adj-guide');
+  if(!wrap||!guide) return;
+  const ww=wrap.offsetWidth, wh=wrap.offsetHeight;
+  // Guide = 90% of wrap, centered, 16:9 aspect ratio capped
+  const gw=Math.round(ww*0.88);
+  const gh=Math.round(Math.min(wh*0.82, gw*0.65));
+  const gx=Math.round((ww-gw)/2);
+  const gy=Math.round((wh-gh)/2);
+  guide.style.width=gw+'px';
+  guide.style.height=gh+'px';
+  guide.style.left=gx+'px';
+  guide.style.top=gy+'px';
+}
+function closeAdj(){
+  document.getElementById('img-adjuster').classList.remove('open');
+  document.body.style.overflow='';
+  document.getElementById('adj-img').src='';
+  adjScale=1;adjX=0;adjY=0;
+}
+function adjZoom(f){adjScale=Math.min(Math.max(adjScale*f,0.2),8);applyAdj();}
+function adjReset(){adjScale=1;adjX=0;adjY=0;applyAdj();}
+function applyAdj(){
+  document.getElementById('adj-img').style.transform=`translate(${adjX}px,${adjY}px) scale(${adjScale})`;
+}
+function confirmAdj(){
+  const img=document.getElementById('adj-img');
+  if(!img.complete || img.naturalWidth===0){
+    // Image not fully loaded yet; wait and retry
+    setTimeout(confirmAdj, 100);
+    return;
+  }
+  const wrap=document.getElementById('adj-wrap');
+  const guide=document.getElementById('adj-guide');
+  const wrapRect=wrap.getBoundingClientRect();
+  const guideRect=guide.getBoundingClientRect();
+  // Guide relative to wrap
+  const gx=guideRect.left-wrapRect.left;
+  const gy=guideRect.top-wrapRect.top;
+  const gw=guideRect.width;
+  const gh=guideRect.height;
+  // Image display position
+  const imgRect=img.getBoundingClientRect();
+  const ix=imgRect.left-wrapRect.left;
+  const iy=imgRect.top-wrapRect.top;
+  const iw=imgRect.width;
+  const ih=imgRect.height;
+  // Crop in natural pixels
+  const scaleX=img.naturalWidth/iw;
+  const scaleY=img.naturalHeight/ih;
+  let cropX=Math.max(0,(gx-ix)*scaleX);
+  let cropY=Math.max(0,(gy-iy)*scaleY);
+  let cropW=Math.min(img.naturalWidth-cropX, gw*scaleX);
+  let cropH=Math.min(img.naturalHeight-cropY, gh*scaleY);
+  // Fallback: if crop area is invalid/too small, use full image
+  if(!isFinite(cropW)||!isFinite(cropH)||cropW<20||cropH<20||iw===0||ih===0){
+    cropX=0; cropY=0; cropW=img.naturalWidth; cropH=img.naturalHeight;
+  }
+  const outW=Math.min(1200,Math.round(cropW));
+  const outH=Math.max(1,Math.round(cropH*(outW/cropW)));
+  const canvas=document.createElement('canvas');
+  canvas.width=outW;canvas.height=outH;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#000';
+  ctx.fillRect(0,0,outW,outH);
+  ctx.drawImage(img,cropX,cropY,cropW,cropH,0,0,outW,outH);
+  const result=canvas.toDataURL('image/jpeg',0.75);
+  closeAdj();
+  const cb=adjCallback;
+  adjCallback=null;
+  setTimeout(()=>{ if(cb) cb(result); }, 150);
+}
+function setupAdjEvents(){
+  const img=document.getElementById('adj-img');
+  const wrap=document.getElementById('adj-wrap');
+  img.onmousedown=e=>{adjDragging=true;adjDragX=e.clientX-adjX;adjDragY=e.clientY-adjY;img.style.cursor='grabbing';e.preventDefault();};
+  document.onmousemove=e=>{if(adjDragging){adjX=e.clientX-adjDragX;adjY=e.clientY-adjDragY;applyAdj();}};
+  document.onmouseup=()=>{if(adjDragging){adjDragging=false;document.getElementById('adj-img').style.cursor='grab';}};
+  wrap.onwheel=e=>{e.preventDefault();adjZoom(e.deltaY<0?1.1:0.9);};
+  let ld=0;
+  wrap.ontouchstart=e=>{
+    if(e.touches.length===2)ld=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+    else if(e.touches.length===1){adjDragging=true;adjDragX=e.touches[0].clientX-adjX;adjDragY=e.touches[0].clientY-adjY;}
+  };
+  wrap.ontouchmove=e=>{
+    e.preventDefault();
+    if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(ld>0)adjZoom(d/ld);ld=d;}
+    else if(e.touches.length===1&&adjDragging){adjX=e.touches[0].clientX-adjDragX;adjY=e.touches[0].clientY-adjDragY;applyAdj();}
+  };
+  wrap.ontouchend=()=>{adjDragging=false;ld=0;};
+}
+
+
+// ---- Guide resize ----
+let resizing=false,resizeDir='',resizeStartX=0,resizeStartY=0;
+let guideX=0,guideY=0,guideW=0,guideH=0;
+
+function startResize(e,dir){
+  e.preventDefault();e.stopPropagation();
+  resizing=true;resizeDir=dir;
+  resizeStartX=e.clientX;resizeStartY=e.clientY;
+  const g=document.getElementById('adj-guide');
+  guideX=parseInt(g.style.left);guideY=parseInt(g.style.top);
+  guideW=parseInt(g.style.width);guideH=parseInt(g.style.height);
+  document.onmousemove=onResizeMove;
+  document.onmouseup=stopResize;
+}
+function startResizeT(e,dir){
+  if(e.touches.length!==1)return;
+  e.preventDefault();e.stopPropagation();
+  resizing=true;resizeDir=dir;
+  resizeStartX=e.touches[0].clientX;resizeStartY=e.touches[0].clientY;
+  const g=document.getElementById('adj-guide');
+  guideX=parseInt(g.style.left);guideY=parseInt(g.style.top);
+  guideW=parseInt(g.style.width);guideH=parseInt(g.style.height);
+  document.ontouchmove=onResizeMoveT;
+  document.ontouchend=stopResize;
+}
+function onResizeMove(e){
+  if(!resizing)return;
+  doResize(e.clientX,e.clientY);
+}
+function onResizeMoveT(e){
+  if(!resizing||!e.touches[0])return;
+  doResize(e.touches[0].clientX,e.touches[0].clientY);
+}
+function doResize(cx,cy){
+  const dx=cx-resizeStartX,dy=cy-resizeStartY;
+  const wrap=document.getElementById('adj-wrap');
+  const minS=40;
+  let nx=guideX,ny=guideY,nw=guideW,nh=guideH;
+  if(resizeDir.includes('r')){nw=Math.max(minS,guideW+dx);}
+  if(resizeDir.includes('b')){nh=Math.max(minS,guideH+dy);}
+  if(resizeDir.includes('l')){const d=Math.min(dx,guideW-minS);nx=guideX+d;nw=guideW-d;}
+  if(resizeDir.includes('t')){const d=Math.min(dy,guideH-minS);ny=guideY+d;nh=guideH-d;}
+  // clamp to wrap
+  nx=Math.max(0,nx);ny=Math.max(0,ny);
+  nw=Math.min(nw,wrap.offsetWidth-nx);
+  nh=Math.min(nh,wrap.offsetHeight-ny);
+  const g=document.getElementById('adj-guide');
+  g.style.left=nx+'px';g.style.top=ny+'px';
+  g.style.width=nw+'px';g.style.height=nh+'px';
+}
+function stopResize(){
+  resizing=false;
+  document.onmousemove=null;document.onmouseup=null;
+  document.ontouchmove=null;document.ontouchend=null;
+}
+
+
+// ===== AI Import =====
+function copyPrompt(){
+  const text = document.getElementById('prompt-text').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ コピー済';
+    btn.style.color = 'var(--win)';
+    setTimeout(()=>{ btn.textContent='コピー'; btn.style.color='var(--dim)'; }, 2000);
+  });
+}
+
+function parseAIJson(){
+  const errEl = document.getElementById('ai-error');
+  errEl.style.display = 'none';
+  const raw = document.getElementById('ai-json-input').value.trim();
+  if(!raw){ showAIError('JSONが空です'); return; }
+
+  // Strip markdown code fences if present
+  let jsonStr = raw;
+  const fence = String.fromCharCode(96,96,96);
+  if(jsonStr.trimStart().startsWith(fence)){
+    const parts = jsonStr.split("\n");
+    parts.shift();
+    if(parts.length && parts[parts.length-1].trim() === fence) parts.pop();
+    jsonStr = parts.join("\n");
+  }
+  jsonStr = jsonStr.trim();
+
+  let data;
+  try{
+    data = JSON.parse(jsonStr);
+  } catch(e){
+    showAIError('JSONの形式が正しくありません: ' + e.message);
+    return;
+  }
+
+  // Populate form
+  try{
+    // Switch to record tab
+    V('record');
+
+    // Result toggle
+    const result = (data.result || 'win').toLowerCase();
+    SR(result === 'win' ? 'win' : 'loss');
+
+    // Date
+    if(data.date) document.getElementById('fd').value = data.date;
+
+    // Symbol
+    const symSel = document.getElementById('fs');
+    const syms = loadSyms();
+    if(data.symbol && syms.includes(data.symbol)){
+      symSel.value = data.symbol;
+    }
+
+    // Numbers
+    if(data.pips) document.getElementById('fp').value = Math.abs(data.pips);
+    if(data.usd)  document.getElementById('fu').value = Math.abs(data.usd);
+    if(data.sl)   document.getElementById('fsl').value = Math.abs(data.sl);
+
+    // RR display
+    calcRR();
+
+    // Direction
+    if(data.dir){
+      const dirSel = document.getElementById('fdr');
+      for(let o of dirSel.options){
+        if(o.value === data.dir || o.text === data.dir){ dirSel.value = o.value; break; }
+      }
+    }
+
+    // Bias
+    if(data.bias5){
+      const b5 = document.getElementById('fb5');
+      for(let o of b5.options){ if(o.value === data.bias5){ b5.value = o.value; break; } }
+    }
+    if(data.bias15){
+      const b15 = document.getElementById('fb15');
+      for(let o of b15.options){ if(o.value === data.bias15){ b15.value = o.value; break; } }
+    }
+
+    // EMA
+    if(data.ema50){
+      const emaSel = document.getElementById('fema');
+      for(let o of emaSel.options){ if(o.value === data.ema50 || o.text === data.ema50){ emaSel.value = o.value; break; } }
+    }
+
+    // Conditions
+    if(data.conditions && Array.isArray(data.conditions)){
+      document.querySelectorAll('.ci').forEach(el => el.classList.remove('checked'));
+      data.conditions.forEach(c=>{
+        const el = document.querySelector(`.ci[data-val="${c}"]`);
+        if(el) el.classList.add('checked');
+      });
+    }
+
+    // Memo
+    if(data.memo) document.getElementById('fm').value = data.memo;
+
+    // Clear JSON input
+    document.getElementById('ai-json-input').value = '';
+
+    // Show success toast
+    const t = document.getElementById('toast');
+    t.textContent = '✓ フォームに入力しました　内容を確認して記録してください';
+    t.className = 'toast wt';
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 3500);
+
+  } catch(e){
+    showAIError('入力中にエラーが発生しました: ' + e.message);
+  }
+}
+
+function showAIError(msg){
+  const el = document.getElementById('ai-error');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+// ===== End AI Import =====
+
+
+// ===== Export All Data =====
+async function exportAllData(){
+  const btn = document.getElementById('export-btn');
+  const prog = document.getElementById('export-progress');
+  btn.disabled = true;
+  btn.textContent = '準備中...';
+  prog.style.display = 'block';
+  prog.textContent = 'データを読み込んでいます...';
+
+  try{
+    const data = LD();
+    if(!data.length){
+      alert('記録がありません');
+      btn.disabled = false;
+      btn.textContent = '📦 全記録をZIPでエクスポート';
+      prog.style.display = 'none';
+      return;
+    }
+
+    const zip = new JSZip();
+    const imgFolder = zip.folder('charts');
+
+    // Build summary JSON (without base64 image data, with image filenames instead)
+    const summary = [];
+    let imgCount = 0;
+
+    for(let i=0; i<data.length; i++){
+      const r = data[i];
+      prog.textContent = `処理中... ${i+1}/${data.length}`;
+
+      const entry = {
+        id: r.id,
+        date: r.date,
+        symbol: r.symbol,
+        result: r.result,
+        pips: r.pips,
+        usd: r.usd,
+        sl: r.sl,
+        rr: r.rr,
+        dir: r.dir,
+        bias5: r.bias5,
+        bias15: r.bias15,
+        ema50: r.ema50,
+        conditions: r.conditions,
+        memo: r.memo,
+        chart_images: []
+      };
+
+      const cnt = r.imgCount || (r.img === '__IDB__' ? 1 : 0);
+      if(cnt > 0){
+        let imgs;
+        if(r.imgCount){
+          imgs = await loadImgs(r.id, cnt);
+        } else {
+          const single = await loadImg(r.id);
+          imgs = single ? [single] : [];
+        }
+        for(let j=0; j<imgs.length; j++){
+          const filename = `chart_${r.id}_${j}.jpg`;
+          const base64 = imgs[j].split(',')[1];
+          imgFolder.file(filename, base64, {base64: true});
+          entry.chart_images.push(`charts/${filename}`);
+          imgCount++;
+        }
+      }
+      summary.push(entry);
+    }
+
+    // Add summary stats
+    const wins = data.filter(r=>r.result==='win');
+    const losses = data.filter(r=>r.result==='loss');
+    const stats = {
+      total_records: data.length,
+      wins: wins.length,
+      losses: losses.length,
+      win_rate: data.length ? Math.round(wins.length/data.length*100) : 0,
+      total_profit_usd: wins.reduce((s,r)=>s+r.usd,0),
+      total_loss_usd: losses.reduce((s,r)=>s+r.usd,0),
+      exported_at: new Date().toISOString()
+    };
+
+    const exportData = { stats, records: summary };
+
+    zip.file('trade_data.json', JSON.stringify(exportData, null, 2));
+
+    // Add readme
+    zip.file('README.txt', `Trade Journal エクスポート
+
+このZIPには以下が含まれています：
+- trade_data.json : 全トレード記録のデータ
+- charts/ : 各記録のチャート画像
+
+Claudeに分析してもらう場合：
+1. このZIPを解凍
+2. trade_data.json とcharts内の画像をClaudeにアップロード
+3. 「このデータを分析してください」と依頼
+
+エクスポート日時: ${new Date().toLocaleString('ja-JP')}
+記録件数: ${data.length}件（画像あり: ${imgCount}件）
+`);
+
+    prog.textContent = 'ZIPを生成しています...';
+    const blob = await zip.generateAsync({type:'blob'});
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trade_journal_export_${new Date().toISOString().slice(0,10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    prog.textContent = `✓ 完了！ ${data.length}件の記録（画像${imgCount}件）をエクスポートしました`;
+    btn.textContent = '📦 全記録をZIPでエクスポート';
+    btn.disabled = false;
+
+  } catch(e){
+    prog.textContent = '⚠ エラー: ' + e.message;
+    btn.textContent = '📦 全記録をZIPでエクスポート';
+    btn.disabled = false;
+  }
+}
+// ===== End Export =====
+
+
+// ---- Multi-image lightbox navigation ----
+let lbImages = [];
+let lbIndex = 0;
+
+function LBM(images, startIndex, label){
+  if(!images || !images.length) return;
+  lbImages = images;
+  lbIndex = startIndex || 0;
+  showLBImage();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+  setupLBEvents();
+
+  const multi = lbImages.length > 1;
+  document.getElementById('lb-prev').classList.toggle('show', multi);
+  document.getElementById('lb-next').classList.toggle('show', multi);
+  document.getElementById('lb-counter').classList.toggle('show', multi);
+  document.getElementById('lb-thumb-strip').classList.toggle('show', multi);
+
+  if(multi){
+    document.getElementById('lb-thumb-strip').innerHTML = lbImages.map((src,i)=>
+      `<img class="lb-thumb ${i===lbIndex?'active':''}" src="${src}" onclick="lbGoto(${i})">`
+    ).join('');
+  }
+}
+
+function showLBImage(){
+  lbReset();
+  document.getElementById('lb-img').src = lbImages[lbIndex];
+  document.getElementById('lb-counter').textContent = `${lbIndex+1} / ${lbImages.length}`;
+  document.querySelectorAll('.lb-thumb').forEach((t,i)=>t.classList.toggle('active', i===lbIndex));
+}
+
+function lbNav(dir){
+  lbIndex = (lbIndex + dir + lbImages.length) % lbImages.length;
+  showLBImage();
+}
+
+function lbGoto(i){
+  lbIndex = i;
+  showLBImage();
+}
+
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key === 'ArrowLeft') lbNav(-1);
+  if(e.key === 'ArrowRight') lbNav(1);
+});
+
+</script>
+
+<!-- IMAGE ADJUSTER MODAL -->
+<div class="img-adjuster" id="img-adjuster">
+  <div class="adj-toolbar">
+    <div class="adj-tools">
+      <button class="adj-btn" onclick="adjZoom(1.2)">＋ 拡大</button>
+      <button class="adj-btn" onclick="adjZoom(0.8)">－ 縮小</button>
+      <button class="adj-btn" onclick="adjReset()">↺ リセット</button>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="adj-btn" onclick="closeAdj()">キャンセル</button>
+      <button class="adj-btn primary" onclick="confirmAdj()">✓ これで記録</button>
+    </div>
+  </div>
+  <div class="adj-canvas-wrap" id="adj-wrap">
+    <img id="adj-img" src="">
+    <div class="adj-guide" id="adj-guide">
+      <div class="adj-corner tl" onmousedown="startResize(event,'tl')" ontouchstart="startResizeT(event,'tl')"></div>
+      <div class="adj-corner tr" onmousedown="startResize(event,'tr')" ontouchstart="startResizeT(event,'tr')"></div>
+      <div class="adj-corner bl" onmousedown="startResize(event,'bl')" ontouchstart="startResizeT(event,'bl')"></div>
+      <div class="adj-corner br" onmousedown="startResize(event,'br')" ontouchstart="startResizeT(event,'br')"></div>
+      <div class="adj-edge top" onmousedown="startResize(event,'t')" ontouchstart="startResizeT(event,'t')"></div>
+      <div class="adj-edge bottom" onmousedown="startResize(event,'b')" ontouchstart="startResizeT(event,'b')"></div>
+      <div class="adj-edge left" onmousedown="startResize(event,'l')" ontouchstart="startResizeT(event,'l')"></div>
+      <div class="adj-edge right" onmousedown="startResize(event,'r')" ontouchstart="startResizeT(event,'r')"></div>
+    </div>
+    <div class="adj-hint">青枠内が保存される範囲 / ドラッグで移動 / ピンチで拡大縮小</div>
+  </div>
+</div>
+
+</body>
+</html>
