@@ -1,0 +1,10 @@
+# バックアップ・個人データ（公開リポジトリに含めない）
+*_backup_*.json
+バックアップ/
+pre_rebuild_backup/
+pre_ui_redesign_backup/
+
+# 開発用ドキュメント・素材
+rebuild_prompt.md
+イメージ画像/
+.claude/
