@@ -802,11 +802,33 @@ function renderAutoBackupPanel(){
   const el=document.getElementById('auto-backup-list');
   if(!el) return;
   const list=loadAutoBackups();
-  el.innerHTML=list.length?list.map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:4px;">
-      <span style="flex:1;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--text);">${esc(new Date(s.ts).toLocaleString('ja-JP'))} — ${s.records.length}件</span>
-      <button onclick="restoreAutoBackupEntry(${i})" style="background:none;border:1px solid var(--gold);border-radius:var(--r-pill);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 12px;cursor:pointer;">復元</button>
-    </div>`).join(''):'<div style="font-size:11px;color:var(--dim);">まだ自動バックアップがありません</div>';
+  if(!list.length){
+    el.innerHTML='<div style="font-size:11px;color:var(--dim);">まだ自動バックアップがありません</div>';
+    return;
+  }
+  // 自分で古い履歴を選んでいた場合だけ再描画をまたいで保つ（index はズレるので ts で照合）。
+  // 既定（最新）のままなら、新しい履歴が増えたときに最新へ追従させる。
+  const prevSel=el.querySelector('#auto-backup-select');
+  const keepTs=(prevSel && prevSel.selectedIndex>0 && prevSel.selectedOptions[0])
+    ? prevSel.selectedOptions[0].dataset.ts : null;
+
+  el.innerHTML=`<div style="display:flex;gap:8px;align-items:center;">
+    <select id="auto-backup-select" style="flex:1;min-width:0;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 10px;outline:none;appearance:none;cursor:pointer;">
+      ${list.map((s,i)=>`<option value="${i}" data-ts="${esc(s.ts)}" style="background:#0d1117;">${esc(new Date(s.ts).toLocaleString('ja-JP'))} — ${s.records.length}件${i===0?'（最新）':''}</option>`).join('')}
+    </select>
+    <button onclick="restoreSelectedAutoBackup()" style="flex-shrink:0;background:none;border:1px solid var(--gold);border-radius:var(--r-pill);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;padding:9px 16px;cursor:pointer;">復元</button>
+  </div>
+  <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--dim);margin-top:6px;">${list.length}件保存中（古いものから自動で消えます）</div>`;
+
+  if(keepTs){
+    const opt=el.querySelector(`#auto-backup-select option[data-ts="${CSS.escape(keepTs)}"]`);
+    if(opt) el.querySelector('#auto-backup-select').value=opt.value;
+  }
+}
+function restoreSelectedAutoBackup(){
+  const sel=document.getElementById('auto-backup-select');
+  if(!sel) return;
+  restoreAutoBackupEntry(parseInt(sel.value,10));
 }
 function restoreAutoBackupEntry(i){
   const snap=loadAutoBackups()[i];
