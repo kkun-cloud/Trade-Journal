@@ -330,6 +330,7 @@ canvas{width:100%!important;background:transparent;border-radius:var(--r-sm);}
       <div class="field"><label>5分足バイアス</label><select id="fb5"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
       <div class="field"><label>15分足バイアス</label><select id="fb15"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
       <div class="field"><label>50EMA実体確定</label><select id="fema"><option value="Yes">✅ 確定後エントリー</option><option value="No">⚡ 途中でエントリー</option></select></div>
+      <div class="field"><label>entry_style（検証中）</label><select id="fes"><option value="">— 未選択</option><option value="confirmed">A confirmed（50EMA確定）</option><option value="wick">B wick（ヒゲ反応）</option></select></div>
     </div>
     <div class="field ff" style="margin-bottom:10px;">
       <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;text-transform:uppercase;">RR Ratio</div>
@@ -437,6 +438,7 @@ canvas{width:100%!important;background:transparent;border-radius:var(--r-sm);}
   "bias5": "一致 または 不一致 または 中立",
   "bias15": "一致 または 不一致 または 中立",
   "ema50": "✅ 確定後エントリー または ⚡ 途中でエントリー",
+  "entry_style": "confirmed または wick または null（Sweep後に入った方式）",
   "conditions": ["該当する条件を配列で"],
   "memo": "気づき・根拠など"
 }
@@ -471,6 +473,15 @@ canvas{width:100%!important;background:transparent;border-radius:var(--r-sm);}
       <div style="font-size:12px;color:var(--text);margin-bottom:14px;line-height:1.6;">全記録のデータと画像をZIPファイルでまとめてダウンロードします。<br>そのままClaudeにアップロードして分析を依頼できます。</div>
       <button onclick="exportAllData()" id="export-btn" style="width:100%;background:var(--neutral);border:none;border-radius:var(--r-md);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;padding:12px;cursor:pointer;">📦 全記録をZIPでエクスポート</button>
       <div id="export-progress" style="display:none;margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);"></div>
+      <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px;">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--win);margin-bottom:10px;">確定申告用 — Excel出力</div>
+        <div style="font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.6;">取引明細・月別集計・年別サマリーの3シートを .xlsx で書き出します。<br>円換算レートと手数料は空欄なので、記入すると損益が自動計算されます。</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="tax-year" style="flex:1;min-width:0;background:var(--s1);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 10px;outline:none;appearance:none;cursor:pointer;"></select>
+          <button onclick="exportTaxExcel()" id="tax-btn" style="flex-shrink:0;background:none;border:1px solid var(--win);border-radius:var(--r-pill);color:var(--win);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px;padding:9px 16px;cursor:pointer;">📊 Excel出力</button>
+        </div>
+        <div id="tax-progress" style="display:none;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--dim);"></div>
+      </div>
       <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px;">
         <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px;">バックアップ / 復元 — データ保護用</div>
         <div style="font-size:11px;color:var(--dim);margin-bottom:12px;line-height:1.6;">記録・画像・銘柄リストを1つのファイルに保存します。URL変更やPC移行の前に必ずバックアップを取ってください。</div>
@@ -570,6 +581,7 @@ canvas{width:100%!important;background:transparent;border-radius:var(--r-sm);}
         <div class="field"><label>5分足バイアス</label><select id="e-bias5"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
         <div class="field"><label>15分足バイアス</label><select id="e-bias15"><option value="一致">一致</option><option value="不一致">不一致</option><option value="中立">中立</option></select></div>
         <div class="field"><label>50EMA実体確定</label><select id="e-ema50"><option value="Yes">✅ 確定後エントリー</option><option value="No">⚡ 途中でエントリー</option></select></div>
+        <div class="field"><label>entry_style</label><select id="e-entry-style"><option value="">— 未選択</option><option value="confirmed">A confirmed（50EMA確定）</option><option value="wick">B wick（ヒゲ反応）</option></select></div>
       </div>
       <div class="cs" id="e-wcs"><div class="ct">勝ちパターン条件</div><div class="cg" id="e-wcg"></div></div>
       <div class="cs" id="e-lcs"><div class="ct">負けパターン原因</div><div class="cg" id="e-lcg"></div></div>
@@ -913,6 +925,11 @@ function delSym(i){
 }
 
 const WCOND_KEY='tj_win_conds', LCOND_KEY='tj_loss_conds';
+// ---- BOS×Sweep版（現行ルール 2026-10-15〜）----
+const WC_BOSSWEEP=['1H: 進行方向に注意ゾーンなし','15m: 明確なトレンド','15m: Big BOS（手前に大きな押し目・戻り目）','ゾーンがフレッシュ（50%未満ミティゲート）','ゾーン内に小さなブレイク構造なし','1m: 小BOSを特定できた','1m: Sweepゾーンを刈る動きが出た','50EMA実体確定を待てた','SLを掃引高安の外側に置けた','TPまで反対側の保護ラインに余地あり','有利な価格で入れた（待てた）','ニュースなし','ボリュームあり'];
+const LC_BOSSWEEP=['1H注意ゾーンが近かった','15mがレンジ・トレンド不明瞭','Big BOSではなかった（小さい更新）','ゾーンがミティゲート済み','ゾーン内に別の構造が混じっていた','偽Sweep（刈られて戻らず）','Sweep前にエントリー','50EMA実体確定前に入った','SLが掃引高安の内側で浅かった','TPまでの余地不足','保護ライン超えでの撤退が遅れた','ニュース中/前後','ボリューム弱い','違和感→強行'];
+
+// ---- 旧ルール（MNQ手法v2）: 戻せるように保持 ----
 const WC_DEFAULT=['蓄積あり（Sweep前にレンジ）','前足の質：実体>ヒゲ・長いヒゲなし','Sweep（流動性狩り）あり','包み足あり（Sweep後）','Sweep直後 × EMAクロスあり','有利な価格でエントリー（待てた）','BOS確定','EMA実体抜け','流動性後の反応が強い','ニュースなし','ボリュームあり','強いゾーンなし','20pips以上の余地','リテスト後エントリー'];
 const LC_DEFAULT=['ニュース中/前後','ボリューム弱い','強いゾーンが近い','利幅20pips未満','流動性後に否定','レンジ内','EMAヒゲ抜けのみ','BOS前エントリー','違和感→強行'];
 function loadConds(key, def){
@@ -925,6 +942,35 @@ function saveConds(){
 let WC = loadConds(WCOND_KEY, WC_DEFAULT);
 let LC = loadConds(LCOND_KEY, LC_DEFAULT);
 
+// ---- カテゴリーセットの切替（BOS×Sweep版 / 旧ルール）----
+function applyCondSet(which){
+  const isNew = which==='bossweep';
+  const w = isNew?WC_BOSSWEEP:WC_DEFAULT;
+  const l = isNew?LC_BOSSWEEP:LC_DEFAULT;
+  const label = isNew?'BOS×Sweep版（現行ルール）':'旧ルール（MNQ手法v2）';
+  if(!confirm(`勝ち条件・負け原因のカテゴリーを「${label}」に入れ替えます。\n\n`
+    +`・現在のカテゴリー（勝ち${WC.length}件 / 負け${LC.length}件）は置き換わります\n`
+    +`・過去記録につけたタグはそのまま残ります（分析の集計対象からは外れます）\n`
+    +`・このボタンでいつでも戻せます\n\nよろしいですか？`)) return;
+  WC=[...w]; LC=[...l];
+  saveConds();
+  BG('wcg',WC,'wc'); BG('lcg',LC,'lc');
+  renderCondEditPanel('win');
+  renderCondEditPanel('loss');
+  renderPromptText();
+  scheduleAutoBackup();
+  const t=document.getElementById('toast');
+  t.textContent='✓ '+label+' に入れ替えました';
+  t.className='toast wt';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+function condSetIs(which){
+  const w = which==='bossweep'?WC_BOSSWEEP:WC_DEFAULT;
+  const l = which==='bossweep'?LC_BOSSWEEP:LC_DEFAULT;
+  return JSON.stringify(WC)===JSON.stringify(w) && JSON.stringify(LC)===JSON.stringify(l);
+}
+
 // ---- カテゴリー編集（追加・改名・削除） ----
 function condArr(type){ return type==='win'?WC:LC; }
 function toggleCondEdit(type){
@@ -936,7 +982,16 @@ function toggleCondEdit(type){
 function renderCondEditPanel(type){
   const p=document.getElementById(type+'-cond-edit-panel');
   const arr=condArr(type);
+  const onNew=condSetIs('bossweep'), onOld=condSetIs('v2');
+  const badge=onNew?'現在: BOS×Sweep版':onOld?'現在: 旧ルール（MNQ手法v2）':'現在: カスタム';
   p.innerHTML=`
+    <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:10px;background:var(--bg);">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--dim);margin-bottom:8px;">ルールセットの切替 — ${esc(badge)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="applyCondSet('bossweep')" ${onNew?'disabled':''} style="flex:1;min-width:150px;background:none;border:1px solid ${onNew?'var(--dim2)':'var(--win)'};border-radius:var(--r-sm);color:${onNew?'var(--dim)':'var(--win)'};font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 12px;cursor:${onNew?'default':'pointer'};">BOS×Sweep版に入れ替え</button>
+        <button onclick="applyCondSet('v2')" ${onOld?'disabled':''} style="flex:1;min-width:150px;background:none;border:1px solid ${onOld?'var(--dim2)':'var(--dim)'};border-radius:var(--r-sm);color:${onOld?'var(--dim)':'var(--text)'};font-family:'Share Tech Mono',monospace;font-size:11px;padding:9px 12px;cursor:${onOld?'default':'pointer'};">旧ルールに戻す</button>
+      </div>
+    </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <input type="text" id="${type}-cond-new" placeholder="新しいカテゴリー名" style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:13px;padding:11px 12px;outline:none;">
       <button onclick="addCond('${type}')" style="background:var(--neutral);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Share Tech Mono',monospace;font-size:12px;padding:11px 20px;cursor:pointer;">追加</button>
@@ -1025,6 +1080,7 @@ function renderPromptText(){
   "bias5": "一致 または 不一致 または 中立",
   "bias15": "一致 または 不一致 または 中立",
   "ema50": "✅ 確定後エントリー または ⚡ 途中でエントリー",
+  "entry_style": "confirmed または wick または null（Sweep後に入った方式）",
   "conditions": ["該当する条件を配列で"],
   "memo": "気づき・根拠など"
 }
@@ -1061,6 +1117,7 @@ function calcRR(){
   // ページ読込時に現在の状態を基準スナップショットとして保存（初回の削除操作からも復元できるように）
   scheduleAutoBackup();
   renderAutoBackupPanel();
+  renderTaxYears();
 })();
 
 function BG(id,items,cls){
@@ -1316,6 +1373,7 @@ function save(){
     bias5:document.getElementById('fb5').value,
     bias15:document.getElementById('fb15').value,
     ema50:document.getElementById('fema').value,
+    entry_style:document.getElementById('fes').value||null,
     conditions:c,
     memo:document.getElementById('fm').value.trim(),
     imgCount: pendingImgs.length
@@ -1331,6 +1389,7 @@ function save(){
   document.getElementById('fb5').value='一致';
   document.getElementById('fb15').value='一致';
   document.getElementById('fema').value='Yes';
+  document.getElementById('fes').value='';
   document.getElementById('rr-display').textContent='—';
   document.getElementById('rr-display').style.color='var(--neutral)';
   document.getElementById('fm').value='';
@@ -1354,7 +1413,7 @@ function V(v){
   if(idx>=0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if(v==='analysis')RA();
   if(v==='list')RL();
-  if(v==='ai')renderAutoBackupPanel();
+  if(v==='ai'){renderAutoBackupPanel();renderTaxYears();}
 }
 
 window.addEventListener('resize', ()=>{
@@ -1573,6 +1632,10 @@ function SF(f,btn){
   RL();
 }
 
+function entryStyleTag(r){
+  if(!r.entry_style) return '';
+  return `<span class="td-tag neu-tag">${r.entry_style==='confirmed'?'A confirmed':'B wick'}</span>`;
+}
 function RL(){
   const data=LD().filter(r=>CF==='all'||r.result===CF);
   const list=document.getElementById('tlist');
@@ -1641,6 +1704,7 @@ function RL(){
             <div class="tdt" style="margin-bottom:10px;">
               ${biasPill('5分',r.bias5)}
               ${biasPill('15分',r.bias15)}
+              ${entryStyleTag(r)}
             </div>
             <div class="tdl">${r.result==='win'?'達成条件':'負け原因'}</div>
             <div class="tdt">${condTags||'<span style="font-size:11px;color:var(--card-dim)">記録なし</span>'}</div>
@@ -1777,6 +1841,7 @@ function openEdit(id){
   document.getElementById('e-bias5').value=r.bias5||'一致';
   document.getElementById('e-bias15').value=r.bias15||'一致';
   document.getElementById('e-ema50').value=r.ema50||'Yes';
+  document.getElementById('e-entry-style').value = r.entry_style||'';
   document.getElementById('e-memo').value=r.memo||'';
   // images
   editExistingImgs=[];
@@ -1870,6 +1935,7 @@ function saveEdit(){
     bias5:document.getElementById('e-bias5').value,
     bias15:document.getElementById('e-bias15').value,
     ema50:document.getElementById('e-ema50').value,
+    entry_style:document.getElementById('e-entry-style').value||null,
     conditions:conds,
     memo:document.getElementById('e-memo').value.trim(),
     imgCount:finalImgs.length
@@ -2177,6 +2243,10 @@ function parseAIJson(){
     }
 
     // Memo
+    if(data.entry_style){
+      const v=String(data.entry_style).toLowerCase();
+      if(v==='confirmed'||v==='wick') document.getElementById('fes').value=v;
+    }
     if(data.memo) document.getElementById('fm').value = data.memo;
 
     // Clear JSON input
@@ -2314,6 +2384,258 @@ Claudeに分析してもらう場合：
     btn.disabled = false;
   }
 }
+// ===== 確定申告用 Excel(.xlsx) 出力 =====
+// JSZip だけで OOXML を直接組み立てる（外部ライブラリを増やさないため）
+function xe(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function xlCol(n){let r='';while(n>0){const m=(n-1)%26;r=String.fromCharCode(65+m)+r;n=(n-m-1)/26;}return r;}
+function xlSerial(y,m,d){return Math.round((Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/86400000);}
+
+// スタイル番号: 0=標準 1=見出し 2=日付 3=USD 4=円 5=% 6=小数2桁 7=太字
+const XLST={DEF:0,HEAD:1,DATE:2,USD:3,JPY:4,PCT:5,NUM:6,BOLD:7};
+
+function xlRow(r, cells){
+  let o=`<row r="${r}">`;
+  cells.forEach((c,i)=>{
+    if(c==null) return;
+    const ref=xlCol(i+1)+r;
+    const st=c.s?` s="${c.s}"`:'';
+    if(c.f!=null)                    o+=`<c r="${ref}"${st}><f>${xe(c.f)}</f></c>`;
+    else if(c.v==null||c.v==='')     o+=`<c r="${ref}"${st}/>`;
+    else if(c.t==='s')               o+=`<c r="${ref}"${st} t="inlineStr"><is><t xml:space="preserve">${xe(c.v)}</t></is></c>`;
+    else                             o+=`<c r="${ref}"${st}><v>${c.v}</v></c>`;
+  });
+  return o+'</row>';
+}
+
+function xlSheet(rows, widths, autoFilterRef){
+  const cols = widths && widths.length
+    ? '<cols>'+widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')+'</cols>'
+    : '';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+    + `<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>`
+    + `<sheetFormatPr defaultRowHeight="15"/>`
+    + cols
+    + `<sheetData>${rows.join('')}</sheetData>`
+    + (autoFilterRef?`<autoFilter ref="${autoFilterRef}"/>`:'')
+    + `</worksheet>`;
+}
+
+function xlStyles(){
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="5"><numFmt numFmtId="164" formatCode="yyyy/mm/dd"/><numFmt numFmtId="165" formatCode="#,##0.00"/><numFmt numFmtId="166" formatCode="#,##0"/><numFmt numFmtId="167" formatCode="0.0%"/><numFmt numFmtId="168" formatCode="0.00"/></numFmts>
+<fonts count="2"><font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8EEF7"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="thin"><color rgb="FF9FB3CC"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="167" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="168" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+}
+
+function xlBook(names){
+  const sheets=names.map((n,i)=>`<sheet name="${xe(n)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`
+    + `<sheets>${sheets}</sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`;
+}
+
+function buildXlsx(sheetDefs){
+  const zip=new JSZip();
+  const n=sheetDefs.length;
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
+    + `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`
+    + `<Default Extension="xml" ContentType="application/xml"/>`
+    + `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`
+    + sheetDefs.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')
+    + `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>`
+    + `</Types>`);
+  zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+  const xl=zip.folder('xl');
+  xl.file('workbook.xml', xlBook(sheetDefs.map(s=>s.name)));
+  xl.file('styles.xml', xlStyles());
+  xl.folder('_rels').file('workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+    + sheetDefs.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')
+    + `<Relationship Id="rId${n+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`
+    + `</Relationships>`);
+  const ws=xl.folder('worksheets');
+  sheetDefs.forEach((s,i)=>ws.file(`sheet${i+1}.xml`, s.xml));
+  return zip;
+}
+
+// 記録から年の一覧を作る
+function taxYears(){
+  const ys=new Set();
+  LD().forEach(r=>{ const m=/^(\d{4})/.exec(r.date||''); if(m) ys.add(m[1]); });
+  return [...ys].sort().reverse();
+}
+function renderTaxYears(){
+  const sel=document.getElementById('tax-year');
+  if(!sel) return;
+  const cur=sel.value;
+  const all=LD();
+  sel.innerHTML=`<option value="all" style="background:#0d1117;">全期間（${all.length}件）</option>`
+    + taxYears().map(y=>{
+        const n=all.filter(r=>String(r.date||'').startsWith(y)).length;
+        return `<option value="${y}" style="background:#0d1117;">${y}年（${n}件）</option>`;
+      }).join('');
+  if(cur && sel.querySelector(`option[value="${cur}"]`)) sel.value=cur;
+}
+
+async function exportTaxExcel(){
+  const btn=document.getElementById('tax-btn');
+  const prog=document.getElementById('tax-progress');
+  const year=document.getElementById('tax-year').value;
+
+  let data=LD();
+  if(year!=='all') data=data.filter(r=>String(r.date||'').startsWith(year));
+  if(!data.length){ alert(year==='all'?'記録がありません':`${year}年の記録がありません`); return; }
+
+  btn.disabled=true; btn.textContent='作成中...';
+  prog.style.display='block'; prog.style.color='var(--dim)'; prog.textContent='シートを組み立てています...';
+
+  try{
+    data=[...data].sort((a,b)=>new Date(a.date)-new Date(b.date));   // 古い順
+
+    // ---- シート1: 取引明細 ----
+    const HEAD=['No','日付','年','年月','銘柄','売買','勝敗','pips','損益(USD)','換算レート','損益(円)','手数料(円)','枚数','差引損益(円)','メモ','entry_style'];
+    const rows=[ xlRow(1, HEAD.map(h=>({v:h,t:'s',s:XLST.HEAD}))) ];
+    const months=new Set(), years=new Set();
+
+    data.forEach((rec,i)=>{
+      const r=i+2;
+      const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(rec.date||'');
+      const y  = m?m[1]:'';
+      const ym = m?`${m[1]}-${m[2]}`:'';
+      if(ym) months.add(ym);
+      if(y)  years.add(y);
+      const sign = rec.result==='win' ? 1 : -1;
+      rows.push(xlRow(r,[
+        {v:i+1},
+        m?{v:xlSerial(+m[1],+m[2],+m[3]), s:XLST.DATE}:{v:'',t:'s'},
+        {v:y,  t:'s'},
+        {v:ym, t:'s'},
+        {v:rec.symbol||'', t:'s'},
+        {v:String(rec.dir||'').indexOf('Buy')===0?'Buy':'Sell', t:'s'},
+        {v:rec.result==='win'?'WIN':'LOSS', t:'s'},
+        {v:(rec.pips!=null?sign*Math.abs(rec.pips):''), s:XLST.NUM},
+        {v:(rec.usd !=null?sign*Math.abs(rec.usd ):''), s:XLST.USD},
+        {v:'', s:XLST.NUM},
+        {f:`IF($J${r}="","",$I${r}*$J${r})`, s:XLST.JPY},
+        {v:'', s:XLST.JPY},
+        {v:''},
+        {f:`IF($K${r}="","",$K${r}-IF($L${r}="",0,$L${r}))`, s:XLST.JPY},
+        {v:rec.memo||'', t:'s'},
+        {v:rec.entry_style||'', t:'s'}
+      ]));
+    });
+    const lastRow=data.length+1;
+    rows.push(xlRow(lastRow+1,[
+      {v:'合計',t:'s',s:XLST.BOLD},null,null,null,null,null,null,
+      {f:`SUM(H2:H${lastRow})`, s:XLST.NUM},
+      {f:`SUM(I2:I${lastRow})`, s:XLST.USD},
+      null,
+      {f:`SUM(K2:K${lastRow})`, s:XLST.JPY},
+      {f:`SUM(L2:L${lastRow})`, s:XLST.JPY},
+      {f:`SUM(M2:M${lastRow})`},
+      {f:`SUM(N2:N${lastRow})`, s:XLST.JPY}
+    ]));
+    const sheet1=xlSheet(rows,[5,11,7,9,16,7,7,9,12,11,13,12,7,14,40,13],`A1:P${lastRow}`);
+
+    // ---- 集計シート（月別・年別で共用）----
+    const COL_YM="'取引明細'!$D:$D", COL_Y="'取引明細'!$C:$C", COL_WL="'取引明細'!$G:$G";
+    function aggSheet(keys, keyCol, label){
+      const H=[label,'取引数','勝','敗','勝率','損益(USD)','損益(円)','手数料(円)','差引損益(円)'];
+      const rs=[ xlRow(1, H.map(h=>({v:h,t:'s',s:XLST.HEAD}))) ];
+      keys.forEach((k,i)=>{
+        const r=i+2;
+        rs.push(xlRow(r,[
+          {v:k,t:'s'},
+          {f:`COUNTIF(${keyCol},$A${r})`},
+          {f:`COUNTIFS(${keyCol},$A${r},${COL_WL},"WIN")`},
+          {f:`COUNTIFS(${keyCol},$A${r},${COL_WL},"LOSS")`},
+          {f:`IF($B${r}=0,"",$C${r}/$B${r})`, s:XLST.PCT},
+          {f:`SUMIF(${keyCol},$A${r},'取引明細'!$I:$I)`, s:XLST.USD},
+          {f:`SUMIF(${keyCol},$A${r},'取引明細'!$K:$K)`, s:XLST.JPY},
+          {f:`SUMIF(${keyCol},$A${r},'取引明細'!$L:$L)`, s:XLST.JPY},
+          {f:`SUMIF(${keyCol},$A${r},'取引明細'!$N:$N)`, s:XLST.JPY}
+        ]));
+      });
+      const lr=keys.length+1, tr=lr+1;
+      rs.push(xlRow(tr,[
+        {v:'合計',t:'s',s:XLST.BOLD},
+        {f:`SUM(B2:B${lr})`},{f:`SUM(C2:C${lr})`},{f:`SUM(D2:D${lr})`},
+        {f:`IF($B${tr}=0,"",$C${tr}/$B${tr})`, s:XLST.PCT},
+        {f:`SUM(F2:F${lr})`, s:XLST.USD},
+        {f:`SUM(G2:G${lr})`, s:XLST.JPY},
+        {f:`SUM(H2:H${lr})`, s:XLST.JPY},
+        {f:`SUM(I2:I${lr})`, s:XLST.JPY}
+      ]));
+      return xlSheet(rs,[12,9,7,7,9,13,14,13,15]);
+    }
+    const sheet2=aggSheet([...months].sort(), COL_YM, '年月');
+    const sheet3=aggSheet([...years].sort(),  COL_Y,  '年');
+
+    // ---- シート4: 使い方・注意 ----
+    const notes=[
+      '確定申告用エクスポート — 使い方',
+      '',
+      '1. 「取引明細」の J列「換算レート」に、その取引日の為替レートを入れてください。',
+      '   入れると K列「損益(円)」が自動計算され、月別・年別シートにも反映されます。',
+      '2. L列「手数料(円)」と M列「枚数」はアプリで記録していないため空欄です。',
+      '   必要なら手で入力してください。N列「差引損益(円)」は 損益(円) − 手数料(円) です。',
+      '3. 損益(USD) は勝ちトレードが＋、負けトレードが−の符号つきで入っています。',
+      '',
+      '注意',
+      '・このファイルはアプリの記録をそのまま書き出したものです。ブローカーの年間取引報告書と',
+      '  必ず突き合わせてください。記録漏れや入力ミスはそのまま反映されます。',
+      '・為替レートの基準（TTM / 取引日 / 決済日 など）や、所得区分・必要経費の扱いは',
+      '  取引形態によって変わります。申告内容は税理士または税務署に確認してください。',
+      '',
+      `出力日時: ${new Date().toLocaleString('ja-JP')}`,
+      `対象: ${year==='all'?'全期間':year+'年'} / ${data.length}件`
+    ];
+    const sheet4=xlSheet(notes.map((t,i)=>xlRow(i+1,[{v:t,t:'s',s:i===0?XLST.BOLD:XLST.DEF}])),[100]);
+
+    prog.textContent='ファイルを書き出しています...';
+    const zip=buildXlsx([
+      {name:'取引明細',    xml:sheet1},
+      {name:'月別集計',    xml:sheet2},
+      {name:'年別サマリー', xml:sheet3},
+      {name:'使い方・注意', xml:sheet4}
+    ]);
+    const blob=await zip.generateAsync({type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`トレード記録_${year==='all'?'全期間':year+'年'}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    prog.style.color='var(--win)';
+    prog.textContent=`✓ ${data.length}件を出力しました（${[...months].length}ヶ月分）`;
+  }catch(e){
+    prog.style.color='var(--loss)';
+    prog.textContent='⚠ エラー: '+e.message;
+    console.error(e);
+  }finally{
+    btn.disabled=false; btn.textContent='📊 Excel出力';
+  }
+}
+
 // ===== End Export =====
 
 
