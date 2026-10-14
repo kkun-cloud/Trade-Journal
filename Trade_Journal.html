@@ -286,6 +286,158 @@ canvas{width:100%!important;background:transparent;border-radius:var(--r-sm);}
 .adj-edge.left{left:-4px;top:18px;bottom:18px;width:8px;cursor:w-resize;}
 .adj-edge.right{right:-4px;top:18px;bottom:18px;width:8px;cursor:e-resize;}
 
+
+/* ===================================================================
+   Liquid Glass テーマ（ダーク）＋ 左サイドバー
+   既存CSSの後ろに足す上書きレイヤー。クラス/IDは変更していないので
+   JavaScript 側は一切影響を受けない。
+   =================================================================== */
+:root{
+  /* ベース */
+  --bg:#0a0c10;
+  --s1:rgba(255,255,255,0.055);
+  --s2:rgba(255,255,255,0.085);
+  --surface:var(--s1);
+  --border:rgba(255,255,255,0.10);
+  --border2:rgba(255,255,255,0.17);
+  --text:#f2f4f8;
+  --dim:#8e97a6;
+  --dim2:#39414e;
+
+  /* アクセント（Apple系の鮮やかさに寄せる） */
+  --win:#32d74b;      --win-dim:rgba(50,215,75,0.16);
+  --loss:#ff453a;     --loss-dim:rgba(255,69,58,0.16);
+  --neutral:#0a84ff;
+  --gold:#ffd60a;
+
+  /* モーダル・詳細カード（もともと明るい想定だった部分をダークガラス化） */
+  --card:rgba(30,34,42,0.82);
+  --card2:rgba(255,255,255,0.055);
+  --card-text:#f2f4f8;
+  --card-dim:#98a2b3;
+  --card-border:rgba(255,255,255,0.12);
+  --badge:rgba(255,255,255,0.08);
+  --win-soft:rgba(50,215,75,0.14);
+  --loss-soft:rgba(255,69,58,0.14);
+  --neutral-soft:rgba(10,132,255,0.16);
+  --win-card:#32d74b;
+  --loss-card:#ff6961;
+  --gold-card:#ffd60a;
+
+  /* 角丸をひとまわり大きく */
+  --r-lg:26px; --r-md:18px; --r-sm:13px;
+}
+
+body{font-weight:400;-webkit-font-smoothing:antialiased;}
+
+/* 背景：グリッド線をやめて、やわらかい光だけにする */
+body::before{
+  background-image:
+    radial-gradient(1100px 760px at 10% 2%,  rgba(10,132,255,0.30) 0%, transparent 62%),
+    radial-gradient(980px 700px at 92% 10%,  rgba(50,215,75,0.20)  0%, transparent 60%),
+    radial-gradient(900px 880px at 58% 100%, rgba(150,120,255,0.22) 0%, transparent 62%),
+    radial-gradient(700px 520px at 76% 52%,  rgba(255,214,10,0.08)  0%, transparent 60%);
+}
+
+/* ---------- 左サイドバー ---------- */
+nav{
+  position:fixed; top:0; left:0; bottom:0;
+  width:232px; height:auto;
+  flex-direction:column; align-items:stretch; justify-content:flex-start;
+  gap:26px; padding:26px 14px;
+  background:rgba(20,23,30,0.66);
+  -webkit-backdrop-filter:blur(34px) saturate(1.7);
+  backdrop-filter:blur(34px) saturate(1.7);
+  border-bottom:none;
+  border-right:1px solid var(--border);
+  box-shadow:inset -1px 0 0 rgba(255,255,255,0.04);
+}
+.nav-left{flex-direction:column; align-items:flex-start; gap:8px; padding:4px 10px;}
+.nav-brand{font-size:21px; letter-spacing:3px; padding:4px 10px;}
+.nav-badge{align-self:flex-start; margin-left:10px; border-radius:var(--r-pill); border-color:var(--border2);}
+.nav-tabs{flex-direction:column; gap:4px;}
+.tab-btn{
+  text-align:left;
+  border-bottom:2px solid transparent;
+  border-radius:14px;
+  padding:12px 14px;
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:13px; letter-spacing:0.4px; text-transform:none;
+  transition:background 0.18s, color 0.18s;
+}
+.tab-btn:hover{background:rgba(255,255,255,0.06);}
+.tab-btn.active{
+  background:rgba(255,255,255,0.11);
+  color:var(--text);
+  border-bottom-color:transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* ---------- メイン領域 ---------- */
+.main{margin:0 auto 0 232px; max-width:1240px; padding:34px 30px 64px;}
+
+/* ---------- ガラスのカード ---------- */
+.glass-surface{
+  -webkit-backdrop-filter:blur(26px) saturate(1.5);
+  backdrop-filter:blur(26px) saturate(1.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 10px 34px rgba(0,0,0,0.38);
+  border:1px solid var(--border);
+}
+
+/* ---------- 入力まわり ---------- */
+.field input,.field select,.field textarea{
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  border-radius:var(--r-sm);
+  font-family:'Noto Sans JP',sans-serif;
+  font-size:13px;
+  padding:12px 14px;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--neutral);
+  box-shadow:0 0 0 3px rgba(10,132,255,0.22);
+}
+.field label{letter-spacing:1.2px;}
+select option{background:#15181f; color:#f2f4f8;}
+
+/* ---------- 汎用ボタン ---------- */
+button{transition:filter 0.15s, background 0.15s, opacity 0.15s;}
+button:hover:not(:disabled){filter:brightness(1.12);}
+
+/* ---------- カードをガラスにする（Trade Journal） ---------- */
+.wrb,.wrc,.kpi,.ib,.ac,.equity-wrap,.tc,.rtog,.modal,.wrbw{
+  -webkit-backdrop-filter:blur(26px) saturate(1.5);
+  backdrop-filter:blur(26px) saturate(1.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.07), 0 10px 34px rgba(0,0,0,0.38);
+  border:1px solid var(--border);
+}
+.tc{background:var(--s1); color:var(--text);}
+.tc-symbol,.tc-stat-val{color:var(--text);}
+.modal{background:var(--card); border:1px solid var(--card-border);}
+.ci{border-radius:var(--r-sm); background:rgba(255,255,255,0.05);}
+.ci:hover{background:rgba(255,255,255,0.08);}
+.fb,.clr{border-radius:var(--r-pill);}
+.sbtn,.modal-save{border-radius:var(--r-pill);}
+.rtb{border-radius:14px;}
+.img-upload-area{border-radius:var(--r-md); background:rgba(255,255,255,0.04);}
+.td-tag{border-radius:var(--r-pill);}
+.toast{border-radius:var(--r-pill); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);}
+
+/* ---------- 狭い画面：サイドバーを下部バーに ---------- */
+@media(max-width:900px){
+  nav{
+    top:auto; left:0; right:0; bottom:0; width:auto;
+    flex-direction:row; align-items:center; justify-content:center;
+    gap:0; padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-right:none; border-top:1px solid var(--border);
+    box-shadow:0 -8px 30px rgba(0,0,0,0.4);
+  }
+  .nav-brand{display:none;}
+  .nav-tabs{flex-direction:row; width:100%; justify-content:space-around; gap:2px;}
+  .tab-btn{flex:1; text-align:center; padding:10px 4px; font-size:11px; border-radius:12px;}
+  .main{margin:0 auto; max-width:100%; padding:22px 14px 104px;}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
